@@ -72,34 +72,28 @@ namespace nc {
 	) {
 		NCReturnValue currentReturn = ncr_Void;
 		bool hasCommandsLeft = true;
-		int commandIndexPriorToRunning = table[REG_Command_Index].asInt();
-		/* Change access from map grabs to references
+		// Change access from map grabs to references
 		NCObject& commandIndex = table[REG_Command_Index];
+		int commandIndexPriorToRunning = table[REG_Command_Index].asInt();
 		commandIndex = 0;
 		NCObject& lastIndex = table[REG_Last_Index];
-		*/
-		table[REG_Command_Index] = 0;
+		
+
 		while (currentReturn != ncr_Terminate && currentReturn != ncr_Node_Shift && hasCommandsLeft) {
 			while (currentReturn == ncr_Void && hasCommandsLeft) {
 				//Index of current command to be run
-				//int programCounter = commandIndex.asInt();
-				int programCounter = table[REG_Command_Index].asInt();
+				int programCounter = commandIndex.asInt();
 				//Fetch the command
 
-				//CAN & HERE TO INCREASE PERFORMANCE
-				NCRuntimeObject command = commands[programCounter];
+				NCRuntimeObject& command = commands[programCounter];
 				//Incriment program counter 
 
-				table[REG_Last_Index] = table[REG_Command_Index];
-				table[REG_Command_Index] = programCounter + 1;
-
-				//lastIndex = commandIndex;
-				//commandIndex = programCounter + 1;
+				lastIndex = commandIndex;
+				commandIndex = programCounter + 1;
 				//Execute
 				currentReturn = command.run(table, *threadControl);
 
-				//if (commandIndex.asInt() >= commands.size()) {
-				if(table[REG_Command_Index].asInt() >= commands.size()){
+				if (commandIndex.asInt() >= commands.size()) {
 					hasCommandsLeft = false;
 					if (currentReturn == ncr_Void)
 						currentReturn = ncr_Commands_Exhausted;
@@ -113,7 +107,7 @@ namespace nc {
 				currentReturn = ncr_Void;
 			}
 		}
-		table[REG_Command_Index] = commandIndexPriorToRunning;
+		commandIndex = commandIndexPriorToRunning;
 		return currentReturn;
 	}
 
