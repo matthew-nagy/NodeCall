@@ -1,4 +1,4 @@
-#include "NCObject.h"
+#include "../header/NCObject.h"
 
 
 namespace nc {

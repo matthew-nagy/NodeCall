@@ -15,7 +15,7 @@ void operator delete(void * p)
 	free(p);
 }
 
-#include "NCCompiler.h"
+#include "header/NCCompiler.h"
 #include<iostream>
 
 using namespace nc;
@@ -197,7 +197,7 @@ private:
 
 void simple_timed_fib() {
 	double tot = 0;
-	for (size_t i = 0; i < 50; i++) {
+	for (size_t i = 0; i < 500; i++) {
 		Timer t;
 		t.start();
 		int a = 0;
@@ -212,13 +212,13 @@ void simple_timed_fib() {
 		}
 		tot += t.elapsedMilliseconds();
 	}
-	printf("Average time is %lf\n", tot / 50);
+	printf("Average time is %lf\n", tot / 500);
 }
 
 void fibonacci_test() {
 	NCNodeLayout* layout = getNCProgramFromFile("Tests/fibonacci_test.nc");
 	double tot = 0;
-	for (size_t i = 0; i < 50; i++) {
+	for (size_t i = 0; i < 500; i++) {
 		NodeCallProgram p(*layout);
 		std::atomic_bool hasEnded = false;
 		Timer t;
@@ -226,7 +226,7 @@ void fibonacci_test() {
 		p.run(hasEnded);
 		tot += t.elapsedMilliseconds();
 	}
-	printf("Average milliseconds to run = %lf\n", tot / 50);
+	printf("Average milliseconds to run = %lf\n", tot / 500);
 
 	//p.writeOutBasicSymbols("WriteOutTest.txt");
 
@@ -276,8 +276,6 @@ int main() {
 	//compile_from_source_test();
 	//full_operator_test();
 	fibonacci_test();
-	char j;
-	std::cin >> j;
 	simple_timed_fib();
 	//run_with_name("Tests/file_ready_checks.nc");
 

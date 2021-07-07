@@ -1,4 +1,4 @@
-#include "NCInBuiltFunctions.h"
+#include "../header/NCInBuiltFunctions.h"
 
 nc::Created_Container_Lobby* getSetLobbyFrom(nc::SymbolTable& table) {
 	void* store = table[nc::REG_Created_Container_Lobby].asNCPacket().data;

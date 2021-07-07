@@ -1,4 +1,4 @@
-#include "NCRuntime.h"
+#include "../header/NCRuntime.h"
 
 namespace nc {
 

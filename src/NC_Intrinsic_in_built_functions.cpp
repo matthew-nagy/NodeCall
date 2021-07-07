@@ -1,4 +1,4 @@
-#include "NCInBuiltFunctions.h"
+#include "../header/NCInBuiltFunctions.h"
 
 
 #define NC_INLINE_ARGUMENTS NCThreadControl& threadControl, NCArgumentList& argList, SymbolTable& symbolTable

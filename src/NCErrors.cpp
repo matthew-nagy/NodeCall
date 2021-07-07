@@ -1,4 +1,4 @@
-#include "NCErrors.h"
+#include "../header/NCErrors.h"
 
 namespace nc {
 	namespace exception {

@@ -1,4 +1,4 @@
-#include "semaphore.hpp"
+#include "../header/semaphore.hpp"
 
 
 //Internal mutex is locked on all operations meaning only one function can be running in a thread at once

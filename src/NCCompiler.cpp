@@ -1,4 +1,4 @@
-#include "NCCompiler.h"
+#include "../header/NCCompiler.h"
 
 namespace nc {
 
