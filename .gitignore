@@ -1,0 +1,5 @@
+*.vcxproj*
+*old*
+Debug
+Release
+to do.txt
