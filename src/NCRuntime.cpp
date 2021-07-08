@@ -72,36 +72,19 @@ namespace nc {
 	) {
 		NCReturnValue currentReturn = ncr_Void;
 		bool hasCommandsLeft = true;
-<<<<<<< HEAD
-		//Change access from map grabs to references
-		NCObject& commandIndex = table[REG_Command_Index];
-		int commandIndexPriorToRunning = commandIndex.asInt();
-		commandIndex = 0;
-		NCObject& lastIndex = table[REG_Last_Index];
-=======
 		// Change access from map grabs to references
 		NCObject& commandIndex = table[REG_Command_Index];
 		int commandIndexPriorToRunning = table[REG_Command_Index].asInt();
 		commandIndex = 0;
 		NCObject& lastIndex = table[REG_Last_Index];
-		
 
->>>>>>> c383b1d2ebe33f4a273fec899b8d827a67dc7b00
 		while (currentReturn != ncr_Terminate && currentReturn != ncr_Node_Shift && hasCommandsLeft) {
 			while (currentReturn == ncr_Void && hasCommandsLeft) {
 				//Index of current command to be run
 				int programCounter = commandIndex.asInt();
 				//Fetch the command
-
-<<<<<<< HEAD
-
 				NCRuntimeObject& command = commands[programCounter];
 				//Incriment program counter 
-=======
-				NCRuntimeObject& command = commands[programCounter];
-				//Incriment program counter 
-
->>>>>>> c383b1d2ebe33f4a273fec899b8d827a67dc7b00
 				lastIndex = commandIndex;
 				commandIndex = programCounter + 1;
 				//Execute
