@@ -217,8 +217,8 @@ namespace nc {
 
 		symbolTable[REG_Created_Container_Lobby] = pack;
 
-		for (NCFunction ncfunction : reserved::function_names) {
-			symbolTable[ncfunction.second] = ncfunction;
+		for (NCFunction& ncfunction : reserved::function_names) {
+			symbolTable[ncfunction.second] = &ncfunction;
 		}
 
 

@@ -122,7 +122,7 @@ namespace nc {
 
 	NCReturnValue NCObject::operator()(NCThreadControl& threadControl, NCArgumentList& arguments, SymbolTable& table, NCRuntimeList& internalCommands) {
 		if (myType == nct_Func)
-			return _ncfunction.first(threadControl, arguments, table, internalCommands);
+			return _ncfunction->first(threadControl, arguments, table, internalCommands);
 		else
 			throw new exception::NonFunctionCalled(nct_to_str(myType));
 	}
@@ -147,7 +147,7 @@ namespace nc {
 		myType = nct_Type;
 		_nctype = value;
 	}
-	void NCObject::operator=(const NCFunction&	value)noexcept {
+	void NCObject::operator=(NCFunction*const&	value)noexcept {
 		myType = nct_Func;
 		_ncfunction = value;
 	}
@@ -320,7 +320,7 @@ namespace nc {
 	}
 	bool NCObject::operator==(const NCFunction&	value)const noexcept {
 		if (myType == nct_Func)
-			return value.second == _ncfunction.second;
+			return value.second == _ncfunction->second;
 		return false;
 
 	}
@@ -391,7 +391,7 @@ namespace nc {
 		case nct_String: return _string;
 		case nct_Bool: return _bool ? "True" : "False";
 		case nct_Type: return nct_to_str(_nctype);
-		case nct_Func:return "Function with name '" + _ncfunction.second + "'";
+		case nct_Func:return "Function with name '" + _ncfunction->second + "'";
 		case nct_Null:return "NullValue";
 		default:
 			throw new exception::InvalidTypeCast(nct_to_str(myType), "string");
@@ -418,7 +418,7 @@ namespace nc {
 			throw new exception::InvalidTypeCast(nct_to_str(myType), "NodeCallType");
 		}
 	}
-	NCFunction NCObject::asNCFunction()const {
+	NCFunction* NCObject::asNCFunction()const {
 		switch (myType) {
 		case nct_Func:return _ncfunction;
 		default:

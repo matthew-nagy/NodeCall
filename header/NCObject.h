@@ -112,7 +112,7 @@ namespace nc {
 		void operator=(const std::string&	value)noexcept;
 		void operator=(const bool&			value)noexcept;
 		void operator=(const NCType&		value)noexcept;
-		void operator=(const NCFunction&	value)noexcept;
+		void operator=(NCFunction*const&	value)noexcept;
 		void operator=(const NCPacket&		value)noexcept;
 		void operator=(const NCObject&		value)noexcept;
 		void operator=(const void* value)noexcept;
@@ -158,7 +158,7 @@ namespace nc {
 		std::string asString()		const;
 		bool		asBool()		const;
 		NCType		asNCType()		const;
-		NCFunction	asNCFunction()	const;
+		NCFunction*	asNCFunction()	const;
 		NCPacket	asNCPacket()	const;
 
 		void writeToFile(std::ofstream& file)const;
@@ -179,7 +179,7 @@ namespace nc {
 			NCType _nctype;
 		};
 		std::string _string;
-		NCFunction _ncfunction;
+		NCFunction* _ncfunction;
 		NCPacket _ncpacket;
 		NCType myType = nct_Null;
 	};

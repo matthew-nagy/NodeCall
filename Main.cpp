@@ -93,7 +93,7 @@ void embbed_test() {
 	NCNodeLayout layout;
 	layout["main"] = mainFunction;
 	NodeCallProgram myProgram(layout);
-	myProgram.symbols["print_and_incriment"] = NCFunction([](NCThreadControl& tc, NCArgumentList& args, SymbolTable& table, NCRuntimeList&)->NCReturnValue {
+	myProgram.symbols["print_and_incriment"] = new NCFunction([](NCThreadControl& tc, NCArgumentList& args, SymbolTable& table, NCRuntimeList&)->NCReturnValue {
 		NCObject& target = args[0]->get(table, tc);
 		printf("%d\n", target.asInt());
 		target = target.asInt() + 1;
