@@ -466,24 +466,21 @@ namespace nc {
 		size_t stringSize;
 		file.read((char*)&myType, sizeof(NCType));
 		switch (myType) {
-			file.read((char*)&myType, sizeof(NCType));
-			switch (myType) {
-			case nct_Int:
-			case nct_Float:
-			case nct_Bool:
-			case nct_Type:
-				//All of these are just the single size, so lets write them out as a 4
-				file.read((char*)&_int, sizeof(int));
-				break;
-			case nct_String:
-				//A bit special, need to write out the entire string
-				file.read((char*)&stringSize, sizeof(size_t));
-				_string.resize(stringSize);
-				file.read(&_string[0], stringSize);
-				break;
-			default:
-				throw new exception::InvalidTypeForFileIO(nct_to_str(myType));
-			}
+		case nct_Int:
+		case nct_Float:
+		case nct_Bool:
+		case nct_Type:
+			//All of these are just the single size, so lets write them out as a 4
+			file.read((char*)&_int, sizeof(int));
+			break;
+		case nct_String:
+			//A bit special, need to write out the entire string
+			file.read((char*)&stringSize, sizeof(size_t));
+			_string.resize(stringSize);
+			file.read(&_string[0], stringSize);
+			break;
+		default:
+			throw new exception::InvalidTypeForFileIO(nct_to_str(myType));
 		}
 	}
 	NCObject::NCObject(const NCObject& other){

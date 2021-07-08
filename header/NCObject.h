@@ -98,7 +98,7 @@ namespace nc {
 	private:
 		static NCObject __should_never_be_seen;
 	};
-
+	
 	class NCObject {
 	public:
 		//For when the object is a form of function
