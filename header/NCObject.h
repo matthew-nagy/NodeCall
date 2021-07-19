@@ -197,6 +197,7 @@ namespace nc {
 		NCObject& get(SymbolTable& table, NCThreadControl& threadControl)override;
 		NCObjectReference* makeCopy()override;
 		NCNamedObjectReference(std::string name);
+		~NCNamedObjectReference();
 	private:
 		std::string name;
 	};

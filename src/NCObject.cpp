@@ -73,6 +73,9 @@ namespace nc {
 	NCNamedObjectReference::NCNamedObjectReference(std::string name) :
 		name(name)
 	{}
+	NCNamedObjectReference::~NCNamedObjectReference() {
+	//	printf("Deleted named reference with name '%s'\n", name.c_str());
+	}
 
 
 	NCObject& NCSetObjectReference::get(SymbolTable& table, NCThreadControl& threadControl) {
