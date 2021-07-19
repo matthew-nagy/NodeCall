@@ -345,7 +345,7 @@ namespace nc {
 		std::vector<std::string> currentNodeSource;
 		std::string currentNodeName = "";
 		//Ballpark guess of node size for average program.
-		currentNodeSource.reserve(source.size() / 3);
+		currentNodeSource.reserve(source.size() / 10);
 
 		while (lineNumber < source.size()) {
 			if (source[lineNumber][source[lineNumber].size() - 1] != '>')
@@ -364,8 +364,6 @@ namespace nc {
 				//Go past the ">" line
 				lineNumber++;
 				program->operator[](currentNodeName) = cmpl::getNCNode(currentNodeSource);
-				//End after any node
-				program->operator[](currentNodeName).push_back(NCRuntimeObject(new NCNamedObjectReference("end"), NCArgumentList{}, NCRuntimeList{}));
 				currentNodeName = "";
 				currentNodeSource.clear();
 			}
@@ -381,6 +379,8 @@ namespace nc {
 
 		while (std::getline(file, line))
 			source.push_back(line);
+
+		file.close();
 
 		return getNCProgramFromSource(source);
 	}
