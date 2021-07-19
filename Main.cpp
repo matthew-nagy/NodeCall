@@ -1,4 +1,6 @@
-#include <unordered_map>
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 size_t created = 0;
 size_t deleted = 0;
 
@@ -236,14 +238,16 @@ void fibonacci_test() {
 	delete layout;
 }
 
-void run_with_name(std::string name) {
+void run_with_name(std::string name, bool holdAfterCall = true) {
 	NCNodeLayout* layout = getNCProgramFromFile(name);
 	NodeCallProgram p(*layout);
 	std::atomic_bool hasEnded = false;
 	p.run(hasEnded);
 
-	char a;
-	std::cin >> a;
+	if (holdAfterCall) {
+		char a;
+		std::cin >> a;
+	}
 
 	delete layout;
 }
@@ -275,9 +279,9 @@ int main() {
 	//embbed_test();
 	//compile_from_source_test();
 	//full_operator_test();
-	fibonacci_test();
-	simple_timed_fib();
-	//run_with_name("Tests/file_ready_checks.nc");
+	//fibonacci_test();
+	//simple_timed_fib();
+	run_with_name("Tests/fibonacci_test.nc", false);
 
 	printf("Mem still in use is %u\n", created - deleted);
 
