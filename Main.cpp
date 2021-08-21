@@ -238,6 +238,44 @@ void fibonacci_test() {
 	delete layout;
 }
 
+void equiptNodeWithFibAndTest() {
+	NCObject runFibonacciObj;
+	//NCReturnValue(NCThreadControl&, NCArgumentList&, SymbolTable&, NCRuntimeList&)
+	auto fibFunc = NCFunction([](NCThreadControl&, NCArgumentList&, SymbolTable&, NCRuntimeList&)->NCReturnValue {
+		int a = 0;
+		int b = 1;
+		int j = 2;
+		while (j < 100) {
+			int res = a + b;
+			a = b;
+			b = res;
+			printf("The fibonacci number at index %d is %d\n", j, b);
+			j += 1;
+		}
+		return ncr_Void;
+	}, "runFibonacci");
+	runFibonacciObj = &fibFunc;
+
+	NCNodeLayout* layout = getNCProgramFromFile("Tests/linked_fibonacci.nc");
+	double tot = 0;
+	for (size_t i = 0; i < 500; i++) {
+		NodeCallProgram p(*layout);
+		p.symbols["runFibonacci"] = runFibonacciObj;
+		std::atomic_bool hasEnded = false;
+		Timer t;
+		t.start();
+		p.run(hasEnded);
+		tot += t.elapsedMilliseconds();
+	}
+
+	printf("Average elapsed time for the embedded fibonacci was %f\n", tot / 500.0);
+
+	delete layout;
+
+	char a;
+	std::cin >> a;
+}
+
 void run_with_name(std::string name, bool holdAfterCall = true) {
 	NCNodeLayout* layout = getNCProgramFromFile(name);
 	NodeCallProgram p(*layout);
@@ -280,8 +318,9 @@ int main() {
 	//compile_from_source_test();
 	//full_operator_test();
 	//fibonacci_test();
-	//simple_timed_fib();
-	run_with_name("Tests/fibonacci_test.nc", false);
+	equiptNodeWithFibAndTest();
+	simple_timed_fib();
+	//run_with_name("Tests/fibonacci_test.nc", false);
 
 	printf("Mem still in use is %u\n", created - deleted);
 

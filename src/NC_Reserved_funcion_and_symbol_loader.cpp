@@ -26,7 +26,6 @@ namespace nc {
 			}
 			//End the program
 			NCReturnValue terminate(NC_IN_BUILT_ARGUMENTS) {
-				printf("Termination called\n");
 				return ncr_Terminate;
 			}
 			//Throws an exception letting me observe the state of the program
