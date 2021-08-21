@@ -32,7 +32,14 @@ namespace nc {
 
 		void run(std::atomic_bool& programHasEnded);
 
+		//Resets everything in the symbol table, so it can be run anew
 		void reset(std::string startNode = "main");
+
+		//Resets main registers, symbols are kept
+		void restart(std::string startNode = "main");
+
+		//Alters the layout of the program, then restarts
+		void changeLayout(const NCNodeLayout& newLayout, std::string startNode = "main");
 
 		void readInBasicSymbols(std::ifstream& file);
 		void readInBasicSymbols(const std::string& fileDestination);

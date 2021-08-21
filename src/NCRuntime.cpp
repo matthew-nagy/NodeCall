@@ -119,6 +119,20 @@ namespace nc {
 	}
 
 
+	//Resets main registers, symbols are kept
+	void NodeCallProgram::restart(std::string startNode){
+		symbols[REG_Node_Name] = startNode;
+		symbols[REG_Command_Index] = 0;
+		symbols[REG_Last_Index] = 0;
+	}
+
+	//Alters the layout of the program, then restarts
+	void NodeCallProgram::changeLayout(const NCNodeLayout& newLayout, std::string startNode){
+		layout = std::move(newLayout);
+		restart(startNode);
+	}
+
+
 	void NodeCallProgram::readInBasicSymbols(std::ifstream& file) {
 		while (!file.eof()) {
 			size_t keySize;

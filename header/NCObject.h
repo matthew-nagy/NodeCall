@@ -23,13 +23,19 @@ namespace nc {
 	struct NCRuntimeObject;
 
 
-
+	//Name of the node of current execution
 	extern const std::string REG_Node_Name;
+	//Index of the current command being executed
 	extern const std::string REG_Command_Index;
+	//Index of the last command to be executed
 	extern const std::string REG_Last_Index;
+	//Global stack to allow for Turing Completeness
 	extern const std::string REG_Global_Stack;
+	//Global queue to allow for Turing Completeness
 	extern const std::string REG_Global_Queue;
+	//Keeps record of all created objects to allow for clean resets
 	extern const std::string REG_Created_Container_Lobby;
+	//In case new REG variables are used, you can put them here to stop them being deleted
 	extern const std::unordered_set<std::string> REG_Variables;
 
 	//A map of strings to NCObjects, acting as a map to variables and functions defined in the scope
