@@ -17,7 +17,7 @@ void operator delete(void * p)
 	free(p);
 }
 
-#include "header/NCCompiler.h"
+#include "NodeCall.h"
 #include<iostream>
 
 using namespace nc;
@@ -290,6 +290,39 @@ void run_with_name(std::string name, bool holdAfterCall = true) {
 	delete layout;
 }
 
+void parallelism_test() {
+	std::vector<std::string> program = {
+		"main>",
+		"  assign(a, 5);",
+		"  println(\"a should be 5:\", a);",
+		">"
+	};
+	NCNodeLayout* layout = getNCProgramFromSource(program);
+	Script_Thread thread(*layout, SymbolTable());
+
+	thread.launch();
+	thread.blockWhileRunning();
+	thread.sendExecutionToNode("main");
+	thread.launch();
+	
+	std::vector<std::string> secondProgram = {
+		"main>",
+		"  println(\"a should still be an accessable variable, here is its value\");",
+		"  println(a);",
+		">"
+	};
+	NCNodeLayout* secondLayout = getNCProgramFromSource(secondProgram);
+
+	thread.blockWhileRunning();
+	thread.changeProgram(*secondLayout);
+	thread.launch();
+	thread.blockWhileRunning();
+
+	delete layout;
+	delete secondLayout;
+
+}
+
 int main() {
 	printf("%u ncobject\n", sizeof(nc::NCObject));
 	printf("%u inline func reference\n", sizeof(nc::NCInlineFunctionReference));
@@ -318,9 +351,11 @@ int main() {
 	//compile_from_source_test();
 	//full_operator_test();
 	//fibonacci_test();
-	equiptNodeWithFibAndTest();
-	simple_timed_fib();
+	//equiptNodeWithFibAndTest();
+	//simple_timed_fib();
 	//run_with_name("Tests/fibonacci_test.nc", false);
+
+	parallelism_test();
 
 	printf("Mem still in use is %u\n", created - deleted);
 
