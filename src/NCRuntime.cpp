@@ -55,7 +55,6 @@ namespace nc {
 	}
 
 	void NodeCallProgram::run(std::atomic_bool& programHasEnded) {
-		printf("In run\n");
 		NCReturnValue currentReturn = ncr_Void;
 		while (currentReturn != ncr_Terminate && currentReturn != ncr_Commands_Exhausted)
 			currentReturn = NodeCallProgram::runCommands(layout[symbols[REG_Node_Name].asString()], symbols, threadControl);
