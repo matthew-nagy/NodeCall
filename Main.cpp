@@ -350,12 +350,12 @@ int main() {
 	//embbed_test();
 	//compile_from_source_test();
 	//full_operator_test();
-	//fibonacci_test();
-	//equiptNodeWithFibAndTest();
-	//simple_timed_fib();
+	fibonacci_test();
+	equiptNodeWithFibAndTest();
+	simple_timed_fib();
 	//run_with_name("Tests/fibonacci_test.nc", false);
 
-	parallelism_test();
+	//parallelism_test();
 
 	printf("Mem still in use is %u\n", created - deleted);
 
