@@ -28,6 +28,8 @@ namespace nc {
 
 		NCThreadControl* getThreadControl();
 
+		SymbolTable& getSymbolTable();
+
 		Script_Thread(const NCNodeLayout& program, const SymbolTable& additionalSymbols, std::string startNode = "main");
 
 		~Script_Thread();

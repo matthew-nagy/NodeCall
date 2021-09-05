@@ -42,6 +42,10 @@ namespace nc {
 		return nodeCallProgram.threadControl;
 	}
 
+	SymbolTable& Script_Thread::getSymbolTable() {
+		return nodeCallProgram.symbols;
+	}
+
 	Script_Thread::Script_Thread(const NCNodeLayout& program, const SymbolTable& additionalSymbols, std::string startNode) :
 		nodeCallProgram(program, startNode),
 		scriptIsRunning(false),
@@ -51,7 +55,7 @@ namespace nc {
 		scriptThread = std::thread([this]() {runScript(); });
 		//Add any extra symbols you need for your script
 		for (auto& p : additionalSymbols)
-			nodeCallProgram.symbols.emplace(p);
+			nodeCallProgram.symbols[p.first] = p.second;
 	}
 
 	Script_Thread::~Script_Thread() {
