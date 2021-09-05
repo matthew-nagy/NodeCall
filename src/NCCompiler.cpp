@@ -133,6 +133,7 @@ namespace nc {
 
 			while (levelsIn > 0) {
 				char c = line[index];
+
 				index++;
 				if (c == opener)
 					levelsIn++;
@@ -251,8 +252,11 @@ namespace nc {
 		NCObjectReference* getNCNumericArg(const std::string& arg) {
 			bool hasPoint = false;
 			bool hasBaseMarker = false;
-			for (auto& c : arg) {
-				if (c < '0' || c > '9') {
+			for (size_t i = 0; i < arg.size(); i++) {
+				char c = arg[i];
+				if (c == '-' && i == 0 && arg.size() > 1)
+					continue;
+				else if (c < '0' || c > '9') {
 					if (c != '.' && c != 'b' && c != 'x')
 						throw new exception::InvalidNumeric(arg);
 					else if (hasPoint || hasBaseMarker)//Can only have one of either of the two, and ONE at that
@@ -295,15 +299,16 @@ namespace nc {
 			for (const std::string& arg : arguments) {
 				if (arg == "")
 					throw new exception::MissingArgOnCompilation;
-				else if (arg == "True")
+				else if (arg == "True" || arg == "true")
 					toret.push_back(new NCSetObjectReference(new NCObject(makeNCObject(true))));
-				else if (arg == "False")
+				else if (arg == "False" || arg == "false")
 					toret.push_back(new NCSetObjectReference(new NCObject(makeNCObject(false))));
 				else if (arg[0] == '"')
 					toret.push_back(getNCStringArg(arg));
 				else if (arg[0] == ':')
 					toret.push_back(getNCTypeArg(arg));
-				else if (arg[0] >= '0' && arg[0] <= '9')
+				//Remember to check for negative numbers
+				else if ((arg[0] >= '0' && arg[0] <= '9') || arg[0] == '-')
 					toret.push_back(getNCNumericArg(arg));
 				else
 					toret.push_back(getNCSymbolArg(arg));
@@ -316,6 +321,10 @@ namespace nc {
 			ParsedFunctionCall fc = getFunctionCall(line, index);
 			std::string internalCommands;
 
+			if (index >= line.getSize()) {
+				printf("unexpected end of segment after function, probably a missing ';'\n");
+				throw new exception::UnexpectedEndOfSection("getting runtime from line");
+			}
 			char c = line[index];
 			index++;
 			if (c == '{') {
@@ -371,16 +380,20 @@ namespace nc {
 
 		return program;
 	}
-	NCNodeLayout* getNCProgramFromFile(std::string fullFileName) {
-		std::vector<std::string> source;
-		std::string line;
+	NCNodeLayout* getNCProgramFromFile(const std::string& fullFileName) {
 		std::ifstream file;
 		file.open(fullFileName);
 
+		NCNodeLayout* layout = getNCProgramFromFile(file);
+		file.close();
+
+		return layout;
+	}
+	NCNodeLayout* getNCProgramFromFile(std::ifstream& file) {
+		std::vector<std::string> source;
+		std::string line;
 		while (std::getline(file, line))
 			source.push_back(line);
-
-		file.close();
 
 		return getNCProgramFromSource(source);
 	}

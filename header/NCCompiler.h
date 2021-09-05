@@ -8,7 +8,8 @@ extern size_t deleted;
 namespace nc {
 
 	NCNodeLayout* getNCProgramFromSource(std::vector<std::string>& source);
-	NCNodeLayout* getNCProgramFromFile(std::string fullFileName);
+	NCNodeLayout* getNCProgramFromFile(const std::string& fullFileName);
+	NCNodeLayout* getNCProgramFromFile(std::ifstream& file);
 
 
 	class NodeCallSourceControl {
