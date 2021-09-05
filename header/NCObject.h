@@ -188,6 +188,8 @@ namespace nc {
 		NCFunction* _ncfunction;
 		NCPacket _ncpacket;
 		NCType myType = nct_Null;
+
+		int timesSetPacket = 0;
 	};
 
 	template<class T>

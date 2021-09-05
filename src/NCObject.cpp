@@ -155,6 +155,7 @@ namespace nc {
 		_ncfunction = value;
 	}
 	void NCObject::operator=(const NCPacket&		value)noexcept {
+		timesSetPacket += 1;
 		myType = nct_Packet;
 		_ncpacket = value;
 	}
@@ -168,6 +169,7 @@ namespace nc {
 				NCSWITCHSET(nct_Bool, _bool)
 				NCSWITCHSET(nct_Type, _nctype)
 				NCSWITCHSET(nct_Func, _ncfunction)
+				NCSWITCHSET(nct_Packet, _ncpacket)
 		default:
 			myType = nct_Null;
 #undef NCSWITCHSET
@@ -429,8 +431,10 @@ namespace nc {
 		}
 	}
 	NCPacket NCObject::asNCPacket()	const {
-		if (myType != nct_Packet)
+		if (myType != nct_Packet) {
+			printf("Error, I am not a packet\n");
 			throw new exception::InvalidTypeCast(nct_to_str(myType), "NCPacket");
+		}
 		return _ncpacket;
 	}
 
