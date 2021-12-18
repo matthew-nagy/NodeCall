@@ -35,6 +35,8 @@ public:
 namespace ncprivate{
 namespace compiler{
     class NC_Compiler_Mismatched_Token_Error : public std::logic_error{};
+    class NC_Compiler_Illigal_Special_Token : public std::logic_error{};
+    class NC_Compiler_Invalid_Node_Token : public std::logic_error{};
 
     //Environment in which to compiler node call in. Stores the pre-defined functions, quearies and vairables
     struct CompilerEnvironment{
@@ -130,7 +132,7 @@ namespace compiler{
 
     //Lexers are finite state machines. These are the states it could be in
     enum lexer_state{
-        lookingForNode, lookingInNode, readingLongToken, readingNonBase10, readingString
+        lookingForNode, lookingInNode, readingLongToken, readingNonBase10, readingNumber, readingOctal, readingHex, readingBin, readingString
     };
 
     bool isLastTokenType(std::vector<Token>& tokens, token_type type){
@@ -225,6 +227,7 @@ namespace compiler{
         tokens.reserve(string.numOfLines() * 6); //Assming an average of a function, open,close brackets, semicolon and 2 arguments. Some will have more, some less
         bool inNode = false;
         bool onLongToken = false;
+        bool seenDecimalPoint = false;
         token_type longTokenType;
 
         while(!string.atEnd()){
@@ -271,14 +274,48 @@ namespace compiler{
                 //whatever character we were working on.
                 switch(state){
                 case lookingForNode:
-                    //Make sure its alphabetical pls
+                    if( (string.peekChar() >= 'a' && string.peekChar() <='z') || 
+                        (string.peekChar() >= 'A' && string.peekChar() <= 'Z')){
+                            state = readingLongToken;
+                            currentString += string.peekChar();
+                    }
+                    else
+                        throw(new NC_Compiler_Invalid_Node_Token);
                     break;
                 case lookingInNode:
-                    //Unsure what this could be; number, user, etc
+                    currentString += string.peekChar();
+                    switch(string.peekChar()){
+                        case '\"': state = readingString; break;
+                        case '0' : state = readingNonBase10; break;
+                        default:
+                            if(string.peekChar() >= '1' && string.peekChar() <= '9')
+                                state = readingNumber;
+                            else
+                                state = readingLongToken;
+                    }
                     break; 
 
                 //Split these us and do stuff
                 case readingString:
+                    if(string.peekChar() == '"'){
+                        currentString += string.peekChar();
+                        addLongToken(onLongToken, currentString, longTokenType, tokens, compEnv);
+                        state = lookingInNode;
+                    }
+                    //Could be a special case
+                    else if(string.peekChar() == '\\'){
+                        string.takeChar();
+                        switch(string.peekChar()){
+                            case 't': currentString += '\t'; break;
+                            case 'n': currentString += '\n'; break;
+                            case '\\': currentString += '\\';break;
+                            case '\"': currentString += '\"';break;
+                            default:
+                                throw(new NC_Compiler_Illigal_Special_Token);
+                        }
+                    }
+                    else
+                        currentString += string.peekChar();
                 case readingLongToken:
                 case readingNonBase10:
                     break;
