@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <stack>
-#include <NCLog.hpp>
+#include "NCLog.hpp"
 #include <atomic>
 
 struct NCQueary;

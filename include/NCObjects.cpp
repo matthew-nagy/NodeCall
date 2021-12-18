@@ -53,6 +53,22 @@ void NCFunction::operator()(NCRuntime& runtime, NC_Runtime_Log& runtimeLog){
 #include "NCCompiler.hpp"
 int main(){
 
+    std::ifstream file("newTest.ncs");
+    std::vector<std::string> source;
+    std::string line;
+    while(std::getline(file, line))
+        source.emplace_back(std::move(line));
+    ncprivate::compiler::MultiLineString s(source);
 
+    std::vector<std::any*> newlyCreatedVariables;
+    std::vector<NCQueary*> newlyCreatedQuearies;
+
+    ncprivate::compiler::CompilerEnvironment env(newlyCreatedVariables, newlyCreatedQuearies);
+    auto tokens = ncprivate::compiler::lexer(s, env);
+
+    printf("\n\nLexed\n\n");
+
+    for(auto& t : tokens)
+        t.print();
     return 0;
 }

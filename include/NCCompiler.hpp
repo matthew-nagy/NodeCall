@@ -1,8 +1,10 @@
 #pragma once
+
 #include "NCObjects.hpp"
 #include "NCQuearies.hpp"
 #include "NCOperations.hpp"
 #include <fstream>
+#include <string>
 #include <stdexcept>
 
 //Allows a script to access objects, functions and quearies not in built
@@ -41,10 +43,16 @@ namespace compiler{
         std::unordered_map<std::string, NCOperationFunc> functions;
         std::unordered_map<std::string, NCQuearyFunc> quearies;
         std::unordered_map<std::string, std::any*> variables;
+        //TODO; take this out. Just store them as variables
         std::unordered_map<std::string, uint16_t> nodes;
 
         std::vector<std::any*>& newlyCreatedVariables;
         std::vector<NCQueary*>& newlyCreatedQuearies;
+
+        CompilerEnvironment(std::vector<std::any*>& newlyCreatedVariables, std::vector<NCQueary*>& newlyCreatedQuearies):
+            newlyCreatedVariables(newlyCreatedVariables),
+            newlyCreatedQuearies(newlyCreatedQuearies)
+        {}
 
         void addExtention(const NCExtention& ex){
             for(auto& [fname, func] : ex.functions)
@@ -86,20 +94,29 @@ namespace compiler{
         openBracket, closeBracket, openConditionalNode, closeConditionalNode, seperator, terminator, 
         number, string, boolean, function, queary, variable, userDefined, nodeDelimiter
     };
+    std::unordered_map<token_type, std::string> tokenToString = {
+        {openBracket, "Open Bracket"}, {closeBracket, "Close Bracket"}, {openConditionalNode, "Open Curly"}, {closeConditionalNode, "Close Curly"},
+        {seperator, "Comma   "}, {terminator, "Semi-colon"}, {number, "Number "}, {string, "String   "}, {boolean, "Boolean"},
+        {function, "Function"}, {queary, "Queary   "}, {variable, "Variable"}, {userDefined, "User Defined"}, {nodeDelimiter, "Node marker"}
+    };
     //A token from the lexer. Used in the parser to create the object representation
     struct Token{
         token_type type;
         std::string form;
+
+        void print(){
+            printf("|%s\t|%s\n", tokenToString[type].c_str(), form.c_str());
+        }
 
         Token() = default;
         Token(token_type t, std::string&& f):
             type(t),
             form(std::move(f))
         {}
+        Token(const Token& copy) = default;
     };
 
     //Some constants to help parse whats happening in the lexer
-    const char binMarker = 'b';
     const char commentChar= '#';
     const char baseMarker = '0';
     const char hexMarker = 'x';
@@ -116,20 +133,21 @@ namespace compiler{
         lookingForNode, lookingInNode, readingLongToken, readingNonBase10, readingString
     };
 
+    bool isLastTokenType(std::vector<Token>& tokens, token_type type){
+        if(tokens.size() == 0)
+            return false;
+        return tokens.back().type == type;
+    }
+
     //Utility class so that one can consistantly get the next charcter in a multi-line passage passed in. Useful when lexing programs
     class MultiLineString{
     public:
-        char peekChar(){
-            return lines[line][index];
-        }
-        char takeChar(){
-            char val = peekChar();
+        void takeChar(){
             index += 1;
-            if(index == lines[line].size()){
+            if(index >= lines[line].size()){
                 line += 1;
                 index = 0;
             }
-            return val;
         }
         void replaceChar(){
             if(index == 0){
@@ -139,17 +157,42 @@ namespace compiler{
             else
                 index--;
         }
-        char lookBack(){
+        char peekChar(){
+            return lines[line][index];
+        }
+        char peekNextChar(){
+            takeChar();
+            if(atEnd())
+                return '\0';
+            char ans = peekChar();
             replaceChar();
-            return takeChar();
+            return ans;
+        }
+        char peekBack(){
+            replaceChar();
+            char ans = peekChar();
+            takeChar();
+            return ans;
         }
 
         bool atEnd(){
-            return (line == lines.size() - 1) && (index == lines[line].size());
+            printf("Checking end, %zu against %zu\n", line, lines.size());
+            return line >= lines.size();
+        }
+
+        void skipLine(){
+            line++;
+            index = 0;
+        }
+
+        size_t numOfLines(){
+            return lines.size();
         }
 
         MultiLineString(const std::vector<std::string>& lines):
-            lines(lines)
+            lines(lines),
+            line(0),
+            index(0)
         {}
 
     private:
@@ -179,28 +222,31 @@ namespace compiler{
         lexer_state state = lookingForNode;
         std::string currentString = "";
         std::vector<Token> tokens;
+        tokens.reserve(string.numOfLines() * 6); //Assming an average of a function, open,close brackets, semicolon and 2 arguments. Some will have more, some less
         bool inNode = false;
         bool onLongToken = false;
         token_type longTokenType;
 
         while(!string.atEnd()){
-            if(whitespace.count(string.peekChar()) && state != readingString){
-                string.takeChar();
+            printf("Start loop\n");
+            if(string.peekChar() == commentChar){
+                string.skipLine();
+                continue;
+            }
+            else if(whitespace.count(string.peekChar()) && state != readingString){
                 if(onLongToken)
                     addLongToken(onLongToken, currentString, longTokenType, tokens, compEnv);
             }
             else if(oneCharTokens.count(string.peekChar()) > 0 && state != readingString){
                 //Edge case for node declerations
                 if(string.peekChar() == '>'){
-                    string.takeChar();
-                    char next = string.peekChar();
-                    string.replaceChar();
+                    char next = string.peekNextChar();
                     if(next == '='){
                         string.replaceChar();
                         currentString = ">";
                         longTokenType = userDefined;
                     }
-                    else if(tokens[tokens.size()-1].type != seperator){
+                    else if(isLastTokenType(tokens, seperator)){
                         tokens.emplace_back(queary, ">");
                     }
                     else{
@@ -212,8 +258,8 @@ namespace compiler{
                     if(onLongToken)
                         addLongToken(onLongToken, currentString, longTokenType, tokens, compEnv);
 
-                    tokens.emplace_back(oneCharTokens.find(string.peekChar()));
-                    if(string.takeChar() == nodeMarkChar)
+                    tokens.emplace_back((*oneCharTokens.find(string.peekChar())).second);
+                    if(string.peekChar() == nodeMarkChar)
                         inNode = !inNode;
                     
                     state = inNode ? lookingInNode : lookingForNode;
@@ -239,7 +285,11 @@ namespace compiler{
                     
                 }
             }
+
+            string.takeChar();
         }
+
+        return tokens;
     }
 
 }

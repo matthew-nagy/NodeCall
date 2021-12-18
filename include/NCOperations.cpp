@@ -8,18 +8,6 @@ namespace ops{
         args[0].getValue(runLog) = args[1].getValue(runLog);
     }
 
-    struct ex{
-        NCArgType a;
-        void* thing;
-    };
-    void proveMyPoint(){
-        std::vector<ex> es;
-        ex a;
-        a.a =  ncat_Constant;
-        a.thing = (void*)new float(3);
-        es.push_back(a);
-    }
-
     opdef(print){
         std::vector<NCArgument> argVec;
         argVec.emplace_back();
