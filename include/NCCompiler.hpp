@@ -34,14 +34,6 @@ struct NCExtention{
     {}
 };
 
-class NodeCall{
-public:
-    NodeCall() = delete;
-
-    static NCRuntime* compiler(const std::string& filename, const std::initializer_list<NCExtention>& extentions);
-    static NCRuntime* compiler(std::ifstream& file, const std::initializer_list<NCExtention>& extentions);
-};
-
 namespace ncprivate{
 namespace compiler{
 #define ERROR_MAKE(NAME) class NAME : public std::logic_error{ public: NAME () : std::logic_error( #NAME ){} }
@@ -57,8 +49,14 @@ namespace compiler{
     ERROR_MAKE(NC_Parser_Uncalled_Queary);                      //A naked queary was written; no ( ) or arguments
     ERROR_MAKE(NC_Parser_Unexpected_Function_Call_Mid_Function);//While expecting arguments or quearies, a function was put
     ERROR_MAKE(NC_Parser_Invalid_Argument_Token);               //Some token that cannot be used as an argument was attempted to be read as an argument
-    ERROR_MAKE(NC_Parser_Invalid_Arguments_In_Queary);          //While parseing a queary, something went wrong reading the arguments
+    ERROR_MAKE(NC_Parser_Invalid_Arguments_In_Call);            //While parseing a queary or function, something went wrong reading the arguments
     ERROR_MAKE(NC_Parser_Unexpected_EOP);                       //The parser ran out of tokens for a phrase while not finished
+    ERROR_MAKE(NC_Parser_Expected_Open_Bracket);                //A queary or function wasn't called properly
+    ERROR_MAKE(NC_Parser_Missing_Terminator);                   //MISSING SEMICOLON ON LINE XYZ
+    ERROR_MAKE(NC_Parser_Invalid_Terminator);                   //For example "};" is not allowed
+
+    ERROR_MAKE(NC_Parser_Expected_Node);                        //At the highest levels of the program, only node names are allowed
+    ERROR_MAKE(NC_Parser_Expected_Node_Start);                  //After a nodes name a '>' must appear
 #undef ERROR_MAKE
     //Environment in which to compiler node call in. Stores the pre-defined functions, quearies and vairables
     struct CompilerEnvironment{
@@ -71,9 +69,10 @@ namespace compiler{
         std::vector<std::any*>& newlyCreatedVariables;
         std::vector<NCQueary*>& newlyCreatedQuearies;
 
-        CompilerEnvironment(std::vector<std::any*>& newlyCreatedVariables, std::vector<NCQueary*>& newlyCreatedQuearies):
-            newlyCreatedVariables(newlyCreatedVariables),
-            newlyCreatedQuearies(newlyCreatedQuearies)
+        CompilerEnvironment(NCRuntime* runtime):
+            runtime(runtime),
+            newlyCreatedVariables(runtime->objects),
+            newlyCreatedQuearies(runtime->quearies)
         {}
 
         void addExtention(const NCExtention& ex){
@@ -101,26 +100,32 @@ namespace compiler{
             else{
                 uint16_t newNodeIndex = runtime->nodes.size();
                 runtime->nodes.emplace_back();
-                (*variables[name]) = newNodeIndex;
+                (*variables[name]) = new std::any(newNodeIndex);
                 return newNodeIndex;
             }
         }
+    
+
+        NCRuntime* compile(const std::vector<std::string>& lines);
     };
 
     //Types of token NodeCall recognises
     enum token_type{
         openBracket, closeBracket, openConditionalNode, closeConditionalNode, seperator, terminator, 
-        integer, floatingPoint, string, boolean, function, queary, variable, userDefined, nodeDelimiter
+        integer, floatingPoint, string, boolean, function, queary, variable, userDefined, nodeDelimiter,
+        nullToken
     };
     std::map<token_type, std::string> tokenToString = {
         {openBracket, "Open Bracket"}, {closeBracket, "Close Bracket"}, {openConditionalNode, "Open Curly"}, {closeConditionalNode, "Close Curly"},
         {seperator, "Comma   "}, {terminator, "Semi-colon"}, {integer, "Integer "},{floatingPoint, "Float   "}, {string, "String   "}, {boolean, "Boolean"},
-        {function, "Function"}, {queary, "Queary   "}, {variable, "Variable"}, {userDefined, "User Defined"}, {nodeDelimiter, "Node marker"}
+        {function, "Function"}, {queary, "Queary   "}, {variable, "Variable"}, {userDefined, "User Defined"}, {nodeDelimiter, "Node marker"},
+        {nullToken, "NULL TOKEN"}
     };
     //A token from the lexer. Used in the parser to create the object representation
     struct Token{
         token_type type;
         std::string form;
+        unsigned lineOn;
 
         void print(){
             printf("%u\t|%s\t|%s\n",unsigned(type), tokenToString[type].c_str(), form.c_str());
@@ -151,10 +156,10 @@ namespace compiler{
         lookingForNode, lookingInNode, readingLongToken, readingNonBase10, readingNumber, readingOctal, readingHex, readingBin, readingString
     };
 
-    bool isLastTokenType(std::vector<Token>& tokens, token_type type){
+    bool isLastTokenType(std::vector<Token*>& tokens, token_type type){
         if(tokens.size() == 0)
             return false;
-        return tokens.back().type == type;
+        return tokens.back()->type == type;
     }
 
     //Utility class so that one can consistantly get the next charcter in a multi-line passage passed in. Useful when lexing programs
@@ -206,6 +211,10 @@ namespace compiler{
             return lines.size();
         }
 
+        size_t getLineOn(){
+            return line + 1;
+        }
+
         MultiLineString(const std::vector<std::string>& inLines):
             line(0),
             index(0)
@@ -226,7 +235,7 @@ namespace compiler{
 
     //Given a multi string token, a hint on what it may be, and a compiler environment, this function figures out the exact token type it is, and adds it
     //to the list of tokens
-    void addLongToken(bool& onLongToken, bool& seenFloatingPoint, std::string& currentString, token_type longTokenType, std::vector<Token>& tokens, CompilerEnvironment& compEnv){
+    void addLongToken(unsigned lineOn, bool& onLongToken, bool& seenFloatingPoint, std::string& currentString, token_type longTokenType, std::vector<Token*>& tokens, CompilerEnvironment& compEnv){
         onLongToken = false;
         //Only keep looking at the token and adding it if it shouldn't be ignored
         if(ignoredTokens.count(currentString) == 0){
@@ -243,14 +252,15 @@ namespace compiler{
                     longTokenType = boolean;
             }
         }
-        tokens.emplace_back(longTokenType, std::move(currentString));
+        tokens.emplace_back(new Token(longTokenType, std::move(currentString)));
+        tokens[tokens.size()-1]->lineOn = lineOn;
         currentString = "";
     }
 
-    std::vector<Token> lexer(MultiLineString& string, CompilerEnvironment& compEnv){
+    std::vector<Token*> lexer(MultiLineString& string, CompilerEnvironment& compEnv){
         lexer_state state = lookingForNode;
         std::string currentString = "";
-        std::vector<Token> tokens;
+        std::vector<Token*> tokens;
         tokens.reserve(string.numOfLines() * 6); //Assming an average of a function, open,close brackets, semicolon and 2 arguments. Some will have more, some less
         bool inNode = false;
         bool onLongToken = false;
@@ -264,11 +274,11 @@ namespace compiler{
             }
             else if(whitespace.count(string.peekChar()) && state != readingString){
                 if(onLongToken)
-                    addLongToken(onLongToken, seenDecimalPoint, currentString, longTokenType, tokens, compEnv);
+                    addLongToken(string.getLineOn(), onLongToken, seenDecimalPoint, currentString, longTokenType, tokens, compEnv);
             }
             else if(oneCharTokens.count(string.peekChar()) > 0 && state != readingString){
                 if(onLongToken)
-                    addLongToken(onLongToken, seenDecimalPoint, currentString, longTokenType, tokens, compEnv);
+                    addLongToken(string.getLineOn(), onLongToken, seenDecimalPoint, currentString, longTokenType, tokens, compEnv);
                 //Edge case for node declerations
                 if(string.peekChar() == '>'){
                     char next = string.peekNextChar();
@@ -278,16 +288,19 @@ namespace compiler{
                         longTokenType = userDefined;
                     }
                     else if(isLastTokenType(tokens, seperator)){
-                        tokens.emplace_back(queary, ">");
+                        tokens.emplace_back(new Token(queary, ">"));
+                        tokens[tokens.size()-1]->lineOn = string.getLineOn();
                     }
                     else{
                         inNode = !inNode;
-                        tokens.emplace_back(nodeDelimiter, ">");
+                        tokens.emplace_back(new Token(nodeDelimiter, ">"));
+                        tokens[tokens.size()-1]->lineOn = string.getLineOn();
                     }
                 }
                 else{
 
-                    tokens.emplace_back((*oneCharTokens.find(string.peekChar())).second);
+                    tokens.emplace_back(new Token((*oneCharTokens.find(string.peekChar())).second));
+                    tokens[tokens.size()-1]->lineOn = string.getLineOn();
                     if(string.peekChar() == nodeMarkChar)
                         inNode = !inNode;
                     
@@ -330,7 +343,7 @@ namespace compiler{
                 case readingString:
                     if(string.peekChar() == '"'){
                         currentString += string.peekChar();
-                        addLongToken(onLongToken, seenDecimalPoint, currentString, longTokenType, tokens, compEnv);
+                        addLongToken(string.getLineOn(), onLongToken, seenDecimalPoint, currentString, longTokenType, tokens, compEnv);
                         state = lookingInNode;
                         longTokenType = userDefined;
                     }
@@ -450,23 +463,11 @@ namespace compiler{
                 throw(new NC_Parser_Invalid_Argument_Token);
         }
     }
-    //Given a string of tokens, create your new queary argument
-    void parseQueary(const std::vector<Token*>& tokens, std::vector<NCArgument>& into, CompilerEnvironment& env){
-        if(tokens.size() < 3)//Tokens for:  Queary_type  (  )    Thats 3. Maybe one won't have an argument as its a c++ constant? Or static function?
-            throw(new NC_Parser_Invalid_Arguments_In_Queary);
+    
+    void parseQueary(const std::vector<Token*>& tokens, std::vector<NCArgument>& into, CompilerEnvironment& env);
 
-        into.emplace_back();
-        NCArgument& newQueary = into[into.size() - 1];
-        NCQueary* thisQueary = new NCQueary;
-        //Register this queary for deletion at the end
-        env.addQueary(thisQueary);
-        newQueary = thisQueary;
-
-        thisQueary->func = env.quearies[tokens[0]->form];
-        if(tokens[1]->type != openBracket)
-            throw(new NC_Parser_Invalid_Arguments_In_Queary);
-        
-        size_t index = 2;
+    //Given a function call, gets the arguments until the close brackets
+    void parseCall(const std::vector<Token*>& tokens, std::vector<NCArgument>& arguments, CompilerEnvironment& env, size_t& index){
         bool argumentTurn = true;
         while(tokens[index]->type != closeBracket){
             if(argumentTurn){
@@ -486,10 +487,10 @@ namespace compiler{
                             throw(new NC_Parser_Unexpected_EOP);
                     }while(levelsDeep != 0);
 
-                    parseQueary(subQuearyTokens, thisQueary->arguments, env);
+                    parseQueary(subQuearyTokens, arguments, env);
                 }
                 else
-                    parseArgument(*tokens[index], thisQueary->arguments, env);
+                    parseArgument(*tokens[index], arguments, env);
                 argumentTurn = false;
             }
             else{
@@ -497,20 +498,177 @@ namespace compiler{
                 if(tokens[index]->type == seperator)
                     argumentTurn = true;
                 else    //Every argument should be seperated
-                    throw(new NC_Parser_Invalid_Arguments_In_Queary);
+                    throw(new NC_Parser_Invalid_Arguments_In_Call);
             }
 
             index++;
         }
-        //You can't end a queary with ",)"
+        //You can't end a call with ",)"
         if(argumentTurn)
-            throw(new NC_Parser_Invalid_Arguments_In_Queary);
+            throw(new NC_Parser_Invalid_Arguments_In_Call);
+        //Move it past the close brackets
+        index++;
+    }
+    
+    //Given a string of tokens, create your new queary argument
+    void parseQueary(const std::vector<Token*>& tokens, std::vector<NCArgument>& into, CompilerEnvironment& env){
+        if(tokens.size() < 3)//Tokens for:  Queary_type  (  )    Thats 3. Maybe one won't have an argument as its a c++ constant? Or static function?
+            throw(new NC_Parser_Invalid_Arguments_In_Call);
+
+        into.emplace_back();
+        NCArgument& newQueary = into[into.size() - 1];
+        NCQueary* thisQueary = new NCQueary;
+        //Register this queary for deletion at the end
+        env.addQueary(thisQueary);
+        newQueary = thisQueary;
+
+        thisQueary->func = env.quearies[tokens[0]->form];
+        if(tokens[1]->type != openBracket)
+            throw(new NC_Parser_Expected_Open_Bracket);
+        
+
+        size_t index = 2;
+        parseCall(tokens, thisQueary->arguments, env, index);
         //And now the queary is finished
     }
 
-    uint16_t parseNodeAndGetIndex(const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<std::vector<NCFunction>>& nodes);
+    uint16_t parseNodeAndGetIndex(const std::string& name, const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<std::vector<NCFunction>>& nodes, 
+                                    size_t& index, token_type layerEnterType = nullToken, token_type layerExitType = nodeDelimiter);
 
-    void parseFunction(const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<NCFunction>& functions);
+    void parseFunction(const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<NCFunction>& functions, std::vector<std::vector<NCFunction>>& nodes){
+        functions.emplace_back();
+        NCFunction& thisFunc = functions[functions.size() - 1];
+        thisFunc.func = env.functions[tokens[0]->form];
+        thisFunc.lineNumber = tokens[0]->lineOn;
+        std::string nodeName = "CN-"+std::to_string(thisFunc.lineNumber);
+        if(tokens[1]->type != openBracket)
+            throw(new NC_Parser_Expected_Open_Bracket);
+        
+
+        size_t index = 2;
+        parseCall(tokens, thisFunc.arguments, env, index);
+
+        //Well, now we either have out function done, or a conditional
+        if(tokens[index]->type != terminator){
+            if(tokens[index]->type == openConditionalNode){
+                unsigned numOfNodes = 0;
+                //What if it has more!!! The answer is that you keep on keep going on
+                while(tokens[index]->type == openConditionalNode){
+                    thisFunc.arguments.emplace_back();
+                    index++;
+                    std::string thisName = nodeName + "-" + std::to_string(numOfNodes);
+                    numOfNodes++;
+                    thisFunc.arguments[thisFunc.arguments.size() - 1] = parseNodeAndGetIndex(thisName, tokens, env, nodes, index, openConditionalNode, closeBracket);
+                }
+            }
+            else
+                throw(new NC_Parser_Missing_Terminator);
+        }
+
+    }
+
+    uint16_t parseNodeAndGetIndex(const std::string& name, const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<std::vector<NCFunction>>& nodes, size_t& index, token_type layerEnterType, token_type layerExitType){
+        std::vector<Token*> thisNode;
+        unsigned deep = 1;
+        while(deep > 0){
+            if(tokens[index]->type == layerEnterType)
+                deep++;
+            else if(tokens[index]->type == layerExitType)
+                deep--;
+            thisNode.emplace_back(tokens[index]);
+            index++;
+        }
+        //Remove the last limiter
+        thisNode.pop_back();
+
+        uint16_t thisNodeIndex = env.getNode(name);
+
+        unsigned i = 0;
+        //Get the node this will write its functions to
+        std::vector<NCFunction>& node = nodes[thisNodeIndex];
+        std::vector<Token*> thisCall;
+        bool onConditionals = false;
+        
+        //The final closing token was already removed
+        while(i < (thisNode.size())){
+            thisCall.emplace_back(thisNode[i]);
+            if(thisNode[i]->type == terminator){
+                if(onConditionals)
+                    throw(new NC_Parser_Invalid_Terminator);
+                else{
+                    parseFunction(thisCall, env, node, nodes);
+                    thisNode.clear();
+                }
+            }
+            else if(thisNode[i]->type == openConditionalNode)
+                onConditionals = true;
+            else if(thisNode[i]->type == closeConditionalNode){
+                bool calling = true;
+                if((i+1) != thisNode.size())
+                    if(thisNode[i+1]->type == openConditionalNode)
+                        calling = false;
+                //Unless there is another conditional right away, just continue onwards
+                if(calling){
+                    parseFunction(thisCall, env, node, nodes);
+                    thisNode.clear();
+                }
+            }
+        }
+
+
+        return thisNodeIndex;
+    }
+
+    void parser(const std::vector<Token*>& tokens, CompilerEnvironment& environment, std::vector<std::vector<NCFunction>>& nodes){
+        size_t index = 0;
+        while(index < tokens.size()){
+            if(tokens[index]->type == userDefined){
+                std::string nodeName = tokens[index]->form;
+                index++;
+                if(tokens[index]->type == nodeDelimiter){
+                    //Scooch past the delimiter
+                    index++;
+                    parseNodeAndGetIndex(nodeName, tokens, environment, nodes, index);
+                }
+                else
+                    throw(new NC_Parser_Expected_Node_Start);
+            }
+            else
+                throw(new NC_Parser_Expected_Node);
+        }
+    }
+
+
+
+
+    NCRuntime* CompilerEnvironment::compile(const std::vector<std::string>& lines){
+        MultiLineString source(lines);
+
+        auto tokens = lexer(source, *this);
+
+        parser(tokens, *this, this->runtime->nodes);
+
+        for(auto t : tokens)
+            delete t;
+
+        return this->runtime;
+    }
 
 }
 }
+
+class NodeCall{
+public:
+    static NCRuntime* compile(std::ifstream& file, const std::initializer_list<NCExtention*>& extentions){
+        std::vector<std::string> source;
+        std::string line;
+        while(std::getline(file, line))
+            source.emplace_back(std::move(line));
+        
+        ncprivate::compiler::CompilerEnvironment env(new NCRuntime);
+        for(auto& e : extentions)
+            env.addExtention(*e);
+
+        return env.compile(source);
+    }
+};

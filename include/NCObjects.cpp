@@ -54,22 +54,7 @@ void NCFunction::operator()(NCRuntime& runtime, NC_Runtime_Log& runtimeLog){
 int main(){
 
     std::ifstream file("newTest.ncs");
-    std::vector<std::string> source;
-    std::string line;
-    while(std::getline(file, line))
-        source.emplace_back(std::move(line));
-    ncprivate::compiler::MultiLineString s(source);
-
-    std::vector<std::any*> newlyCreatedVariables;
-    std::vector<NCQueary*> newlyCreatedQuearies;
-
-    ncprivate::compiler::CompilerEnvironment env(newlyCreatedVariables, newlyCreatedQuearies);
-    env.addExtention(NCExtention(ncprivate::standard_functions, ncprivate::standard_quearies, std::map<std::string, std::any*>{}));
-    auto tokens = ncprivate::compiler::lexer(s, env);
-
-    printf("\n\nLexed\n\n");
-
-    for(auto& t : tokens)
-        t.print();
+    NCExtention basicNodeCall(ncprivate::standard_functions, ncprivate::standard_quearies, std::map<std::string, std::any*>{});
+    NCRuntime* runtime = NodeCall::compile(file, {&basicNodeCall});
     return 0;
 }
