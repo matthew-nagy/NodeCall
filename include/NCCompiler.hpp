@@ -100,7 +100,9 @@ namespace compiler{
             else{
                 uint16_t newNodeIndex = runtime->nodes.size();
                 runtime->nodes.emplace_back();
-                (*variables[name]) = new std::any(newNodeIndex);
+                auto nodeVariable = getNewVariable(name);
+                (*nodeVariable) = newNodeIndex;
+                //(*variables[name]) = new std::any(newNodeIndex);
                 return newNodeIndex;
             }
         }
@@ -613,6 +615,7 @@ namespace compiler{
                     thisNode.clear();
                 }
             }
+            i++;
         }
 
 

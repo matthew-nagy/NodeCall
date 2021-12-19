@@ -55,6 +55,11 @@ int main(){
 
     std::ifstream file("newTest.ncs");
     NCExtention basicNodeCall(ncprivate::standard_functions, ncprivate::standard_quearies, std::map<std::string, std::any*>{});
+    printf("Compiling\n");
     NCRuntime* runtime = NodeCall::compile(file, {&basicNodeCall});
+    printf("Compiled, running\n");
+
+    (*runtime).run();
+    delete runtime;
     return 0;
 }

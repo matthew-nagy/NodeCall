@@ -167,6 +167,10 @@ friend struct ncprivate::compiler::CompilerEnvironment;
         }
     }
 
+    NCRuntime():
+        currentFrame({0, 0, nc_call_Function})
+    {}
+
     ~NCRuntime(){
         for(std::any* v : objects)
             delete v;
