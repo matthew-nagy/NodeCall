@@ -2,7 +2,7 @@
 
 #include <any>
 #include <string>
-#include <unordered_map>
+#include <map>
 #include <vector>
 #include <stack>
 #include "NCLog.hpp"
@@ -84,7 +84,9 @@ struct NCQueary{
     //Runs the function on the given arguments to resolve a queary
     std::any& operator()(NC_Runtime_Log& runtimeLog);
 
-    NCQueary();
+
+
+    NCQueary() = default;
 private:
     //To speed up other code, all arguments must turn into references to std::any. Therefore, although we create
     //a new std::any each time, we need to copy it to here first, to prevent copying this, and other any's later
