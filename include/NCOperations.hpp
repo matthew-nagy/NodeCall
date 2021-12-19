@@ -40,7 +40,7 @@ namespace ops{
 
 }
 
-    extern const std::unordered_map<std::string, NCOperationFunc> standard_functions;
+    extern const std::map<std::string, NCOperationFunc> standard_functions;
 
 }
 

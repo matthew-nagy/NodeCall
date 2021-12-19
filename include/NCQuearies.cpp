@@ -311,7 +311,7 @@ namespace queary{
     qdef_type_func(tfstring, std::string, std::to_string(std::any_cast<int>(arg1)), std::to_string(std::any_cast<float>(arg1)), std::to_string(std::any_cast<bool>(arg1)), "")
 }
 
-    const std::unordered_map<std::string, NCQuearyFunc> standard_quearies = {
+    const std::map<std::string, NCQuearyFunc> standard_quearies = {
         {"add", queary::add}, {"sub", queary::sub}, {"mul", queary::mul}, {"div", queary::div}, {"mod",queary::mod}, {">>", queary::rshift}, {"<<", queary::lshift},
         {"&", queary::land}, {"|", queary::lor}, {"~", queary::lnot}, {"^", queary::lxor}, {"&&", queary::band}, {"||", queary::bor}, {"!",queary::bnot},
         {"==",queary::beq}, {"!=",queary::bneq}, {"<",queary::bless}, {">",queary::bgreater}, {"<=",queary::blesseq}, {">=",queary::bgreatereq},

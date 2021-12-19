@@ -64,6 +64,7 @@ int main(){
     std::vector<NCQueary*> newlyCreatedQuearies;
 
     ncprivate::compiler::CompilerEnvironment env(newlyCreatedVariables, newlyCreatedQuearies);
+    env.addExtention(NCExtention(ncprivate::standard_functions, ncprivate::standard_quearies, std::map<std::string, std::any*>{}));
     auto tokens = ncprivate::compiler::lexer(s, env);
 
     printf("\n\nLexed\n\n");

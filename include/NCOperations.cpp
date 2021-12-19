@@ -92,7 +92,7 @@ namespace ops{
     //     ops::new_vector, ops::push_front, ops::push_back, ops::erase, ops::clear
     // };
 
-    const std::unordered_map<std::string, NCOperationFunc> standard_functions = {
+    const std::map<std::string, NCOperationFunc> standard_functions = {
         {"assign", ops::assign}, {"print", ops::print}, {"println", ops::println},
         {"if", ops::conditional_if}, {"if_else", ops::conditional_if_else},
         {"link_conditionaly",ops::link_conditionally}, {"link_to", ops::link_to},

@@ -54,7 +54,7 @@ queary::land, queary::lor, queary::lnot, queary::lxor, queary::band, queary::bor
 */
 }
 
- extern const std::unordered_map<std::string, NCQuearyFunc> standard_quearies;
+ extern const std::map<std::string, NCQuearyFunc> standard_quearies;
 
 }
 
