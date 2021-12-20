@@ -50,6 +50,7 @@ namespace compiler{
     ERROR_MAKE(NC_Parser_Unexpected_Function_Call_Mid_Function);//While expecting arguments or quearies, a function was put
     ERROR_MAKE(NC_Parser_Invalid_Argument_Token);               //Some token that cannot be used as an argument was attempted to be read as an argument
     ERROR_MAKE(NC_Parser_Invalid_Arguments_In_Call);            //While parseing a queary or function, something went wrong reading the arguments
+    ERROR_MAKE(NC_Parser_Expected_Comma);                       //While parseing a queary or function, there was a missing ,
     ERROR_MAKE(NC_Parser_Unexpected_EOP);                       //The parser ran out of tokens for a phrase while not finished
     ERROR_MAKE(NC_Parser_Expected_Open_Bracket);                //A queary or function wasn't called properly
     ERROR_MAKE(NC_Parser_Missing_Terminator);                   //MISSING SEMICOLON ON LINE XYZ
@@ -95,16 +96,23 @@ namespace compiler{
             return newVar;
         }
         uint16_t getNode(const std::string name){
-            if(variables.count(name) > 0)
-                return std::any_cast<uint16_t>(*variables[name]);
-            else{
-                uint16_t newNodeIndex = runtime->nodes.size();
-                runtime->nodes.emplace_back();
-                auto nodeVariable = getNewVariable(name);
-                (*nodeVariable) = newNodeIndex;
-                //(*variables[name]) = new std::any(newNodeIndex);
-                return newNodeIndex;
+            if(variables.count(name) > 0){
+                auto* var = variables[name];
+                //If it was seen before hand and mistaken for a variable
+                if(!var->has_value()){
+                    uint16_t newNodeIndex = runtime->nodes.size();
+                    runtime->nodes.emplace_back();
+                    (*var) = newNodeIndex;
+                }
+                return std::any_cast<uint16_t>(*var);
             }
+
+            uint16_t newNodeIndex = runtime->nodes.size();
+            runtime->nodes.emplace_back();
+            auto nodeVariable = getNewVariable(name);
+            (*nodeVariable) = newNodeIndex;
+            //(*variables[name]) = new std::any(newNodeIndex);
+            return newNodeIndex;
         }
     
 
@@ -129,7 +137,7 @@ namespace compiler{
         std::string form;
         unsigned lineOn;
 
-        void print(){
+        void print()const{
             printf("%u\t|%s\t|%s\n",unsigned(type), tokenToString[type].c_str(), form.c_str());
         }
 
@@ -440,7 +448,7 @@ namespace compiler{
                 newArg = std::atoi(token.form.c_str());
                 break;
             case floatingPoint:
-                newArg = std::atof(token.form.c_str());
+                newArg = float(std::atof(token.form.c_str()));
                 break;
             case token_type::string:
                 //Remove the starting and ending " chars
@@ -461,7 +469,10 @@ namespace compiler{
                 else{//Need to make a new variable!
                     newArg = env.getNewVariable(token.form);
                 }
+                break;
             default:
+                printf("Argument token is -> ");
+                token.print();
                 throw(new NC_Parser_Invalid_Argument_Token);
         }
     }
@@ -488,6 +499,8 @@ namespace compiler{
                         if(index == tokens.size())
                             throw(new NC_Parser_Unexpected_EOP);
                     }while(levelsDeep != 0);
+                    //Will be incrimented at the bottom, so decriment here to keep the ','
+                    index--;
 
                     parseQueary(subQuearyTokens, arguments, env);
                 }
@@ -499,15 +512,22 @@ namespace compiler{
                 //Put a comma or something else, make sure next token is an argument
                 if(tokens[index]->type == seperator)
                     argumentTurn = true;
-                else    //Every argument should be seperated
-                    throw(new NC_Parser_Invalid_Arguments_In_Call);
+                else{    //Every argument should be seperated
+                    printf("##########\n");
+                    for(auto t : tokens)
+                        t->print();
+                    printf("At -> ");
+                    tokens[index]->print();
+                    throw(new NC_Parser_Expected_Comma);
+                }
             }
 
             index++;
         }
-        //You can't end a call with ",)"
-        if(argumentTurn)
+        //You can't end a call with ",)". You can however, call using ()
+        if(argumentTurn && (tokens[index]->type != closeBracket)){
             throw(new NC_Parser_Invalid_Arguments_In_Call);
+        }
         //Move it past the close brackets
         index++;
     }
@@ -538,6 +558,12 @@ namespace compiler{
                                     size_t& index, token_type layerEnterType = nullToken, token_type layerExitType = nodeDelimiter);
 
     void parseFunction(const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<NCFunction>& functions, std::vector<std::vector<NCFunction>>& nodes){
+        printf("Parsing function, tokens are:\n");
+        for(auto t : tokens){
+            printf("\t");
+            t->print();
+        }
+
         functions.emplace_back();
         NCFunction& thisFunc = functions[functions.size() - 1];
         thisFunc.func = env.functions[tokens[0]->form];
@@ -572,14 +598,18 @@ namespace compiler{
     uint16_t parseNodeAndGetIndex(const std::string& name, const std::vector<Token*>& tokens, CompilerEnvironment& env, std::vector<std::vector<NCFunction>>& nodes, size_t& index, token_type layerEnterType, token_type layerExitType){
         std::vector<Token*> thisNode;
         unsigned deep = 1;
+        printf("In parse node: Node's tokens are:\n");
         while(deep > 0){
             if(tokens[index]->type == layerEnterType)
                 deep++;
             else if(tokens[index]->type == layerExitType)
                 deep--;
             thisNode.emplace_back(tokens[index]);
+            printf("\t");
+            tokens[index]->print();
             index++;
         }
+        printf("Printed %zu tokens\n", tokens.size());
         //Remove the last limiter
         thisNode.pop_back();
 
@@ -592,14 +622,17 @@ namespace compiler{
         bool onConditionals = false;
         
         //The final closing token was already removed
-        while(i < (thisNode.size())){
+        while(i < thisNode.size()){
             thisCall.emplace_back(thisNode[i]);
             if(thisNode[i]->type == terminator){
-                if(onConditionals)
+                if(onConditionals){
+                    for(auto t : thisCall)
+                        t->print();
                     throw(new NC_Parser_Invalid_Terminator);
+                }
                 else{
                     parseFunction(thisCall, env, node, nodes);
-                    thisNode.clear();
+                    thisCall.clear();
                 }
             }
             else if(thisNode[i]->type == openConditionalNode)
@@ -612,11 +645,13 @@ namespace compiler{
                 //Unless there is another conditional right away, just continue onwards
                 if(calling){
                     parseFunction(thisCall, env, node, nodes);
-                    thisNode.clear();
+                    thisCall.clear();
+                    onConditionals = false;
                 }
             }
             i++;
         }
+        printf("Finished parsing node, with i at %u\n", i);
 
 
         return thisNodeIndex;
@@ -631,6 +666,7 @@ namespace compiler{
                 if(tokens[index]->type == nodeDelimiter){
                     //Scooch past the delimiter
                     index++;
+                    printf("In parse; calling parse node\n");
                     parseNodeAndGetIndex(nodeName, tokens, environment, nodes, index);
                 }
                 else

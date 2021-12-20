@@ -17,45 +17,32 @@ typedef std::any(*NCQuearyFunc)(std::vector<NCArgument>& args, NC_Runtime_Log& r
 //AN operation on the node call runtime and data
 typedef void(*NCOperationFunc)(NCRuntime& environment, std::vector<NCArgument>& args, NC_Runtime_Log& runLog, unsigned lineNumber);
 
-
-namespace ncprivate{
-    union NCArgUnion{
-        //A queary that can be run
-        NCQueary* queary;
-        //Not unique to this union, accessed in many places
-        std::any* object;
-        //unique to this union
-        std::any* constant;
-
-        NCArgUnion();
-    };
-}
 //Types an argument can be
-enum NCArgType{ncat_Constant, ncat_Queary, ncat_Object};
+enum NCArgType{ncat_Constant, ncat_Queary, ncat_Object, ncat_nullType};
 
 //Used to represent an argument to Node Call functions
 struct NCArgument{
     //Gets the value of this argument
     std::any& getValue(NC_Runtime_Log& runtimeLog);
     //Explains what type of argument this object is
-    NCArgType type;
+    NCArgType type = ncat_nullType;
 
     //This is used to produce duplicates of an argument. Both point to the same data- This is not a copy!
     NCArgument& operator=(const NCArgument& right);
 
     NCArgument& operator=(const std::any& constant){
         type = ncat_Constant;
-        argUnion.constant = new std::any(constant);
+        constantVal = constant;
         return *this;
     }
     NCArgument& operator=(NCQueary* queary){
         type = ncat_Queary;
-        argUnion.queary = queary;
+        quearyPtr = queary;
         return *this;
     }
     NCArgument& operator=(std::any* object){
         type = ncat_Object;
-        argUnion.object = object;
+        objectPtr = object;
         return *this;
     }
 
@@ -65,11 +52,12 @@ struct NCArgument{
     //NCArgument(std::any* object);
     //Constructor as a singular constant
     // NCArgument(const std::any& constant);
-
-    //If this is a singluar constant, than its memory must now be freed
-    ~NCArgument();
+    NCArgument() = default;
+    NCArgument(const NCArgument& cpyf);
 private:
-    ncprivate::NCArgUnion argUnion;
+    std::any* objectPtr;
+    NCQueary* quearyPtr;
+    std::any constantVal;
 };
 
 //Allows operations to be done on arguments before passing it to an NCFunction

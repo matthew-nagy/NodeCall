@@ -5,21 +5,35 @@ namespace ops{
 #define opdef(NAME) void NAME (NCRuntime& environment, std::vector<NCArgument>& args, NC_Runtime_Log& runLog, unsigned lineNumber)
 
     opdef(assign){
-        args[0].getValue(runLog) = args[1].getValue(runLog);
+        std::any& val = args[1].getValue(runLog);
+        printf("Got the value from mul, the type is '%s'\n", val.type().name());
+        args[0].getValue(runLog) = val;
+        //args[0].getValue(runLog) = args[1].getValue(runLog);
     }
 
     opdef(print){
         std::vector<NCArgument> argVec;
         argVec.emplace_back();
         for(size_t i = 0; i < args.size(); i++){
-            argVec[0] = args[i];
-            printf("%s", std::any_cast<std::string>(queary::tfstring(argVec, runLog, lineNumber)).c_str());
+            std::any& val = args[i].getValue(runLog);
+            //For now assume its all a string
+            if(val.has_value()){
+                printf("%s", std::any_cast<std::string>(val).c_str());
+            }
+            else
+                printf("Argument %zu has no value\n", i);
         }
 
     }
     opdef(println){
         print(environment, args, runLog, lineNumber);
         printf("\n");
+    }
+
+    opdef(debugVariable){
+        for(auto& arg : args){
+            printf("Debugging variable:\n\tType string is '%s'\n\tArgument type is %d\n", arg.getValue(runLog).type().name(), int(arg.type));
+        }
     }
 
     //If the first argument resolves to a boolean true, the second argument is treated
@@ -94,6 +108,7 @@ namespace ops{
 
     const std::map<std::string, NCOperationFunc> standard_functions = {
         {"assign", ops::assign}, {"print", ops::print}, {"println", ops::println},
+        {"debugVar", ops::debugVariable},
         {"if", ops::conditional_if}, {"if_else", ops::conditional_if_else},
         {"link_conditionaly",ops::link_conditionally}, {"link_to", ops::link_to},
         {"call_node", ops::call_node}, {"return", ops::return_from}, {"break", ops::break_from},

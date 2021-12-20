@@ -2,11 +2,12 @@
 
 main>
     println("Here we are in main, lets get going");
-    print("Testing print with ", string(3), "things\n");
+    print("Testing print with ", string(3), " things\n");
     assign(num, 4.0);
     assign(otherNum, 2.0);
     assign(result, mul(num, otherNum));
-    println("This value should be 8: ", string(otherNum));
+    debugVar(result);
+    println("This value should be 8: ", string(result), "<- wowie! look at that");
     link_to(second_node);
 >
 
@@ -20,6 +21,6 @@ second_node>
 
 call_test_node>
     println("In a called node, lets return!");
-    return;
+    return();
     println("If this is printing we have some problems :(");
 >

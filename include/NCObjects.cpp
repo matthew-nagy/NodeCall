@@ -1,21 +1,16 @@
 #include "NCObjects.hpp"
 
-namespace ncprivate{
-    NCArgUnion::NCArgUnion(){}
-}
-
-
 NCArgument& NCArgument::operator=(const NCArgument& right){
     type = right.type;
     switch(type){
         case ncat_Constant:
-            argUnion.constant = right.argUnion.constant;
+            constantVal = right.constantVal;
             break;
         case ncat_Queary:   
-            argUnion.queary = right.argUnion.queary;
+            quearyPtr = right.quearyPtr;
             break;
         case ncat_Object:
-            argUnion.object = right.argUnion.object;
+            objectPtr = right.objectPtr;
             break;
     }
 
@@ -23,20 +18,19 @@ NCArgument& NCArgument::operator=(const NCArgument& right){
 }
 
 
-NCArgument::~NCArgument(){
-    if(type == ncat_Constant){
-        delete argUnion.constant;
-    }
+NCArgument::NCArgument(const NCArgument& cpyf){
+    printf("Calling = from copy\n");
+    *this = cpyf;
 }
 
 std::any& NCArgument::getValue(NC_Runtime_Log& runtimeLog){
     switch(type){
         case ncat_Constant:
-            return *argUnion.constant;
+            return constantVal;
         case ncat_Queary:
-            return argUnion.queary->operator()(runtimeLog);
+            return quearyPtr->operator()(runtimeLog);
         case ncat_Object:
-            return *argUnion.object;
+            return *objectPtr;
     }
 }
 
