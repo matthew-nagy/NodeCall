@@ -21,4 +21,6 @@ int main(){
     NCRuntime* runtime = NodeCall::compile(file, {});
     runtime->run();
     delete runtime;
+
+    return 0;
 }

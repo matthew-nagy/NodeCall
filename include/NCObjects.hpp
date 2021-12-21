@@ -123,7 +123,7 @@ friend struct ncprivate::compiler::CompilerEnvironment;
     void returnFunc();
     void returnConditional();
 
-    void run();
+    void run(std::string node = "main");
 
     NCRuntime();
 
@@ -132,6 +132,7 @@ friend struct ncprivate::compiler::CompilerEnvironment;
 private:
 
     std::vector<std::vector<NCFunction>> nodes;
+    std::unordered_map<std::string, uint16_t> nodeKeys;
     //These are just the objects and queries owned by this runtime;some others may be stored elsewhere
     std::vector<std::any*> objects;
     std::vector<NCQueary*> quearies;

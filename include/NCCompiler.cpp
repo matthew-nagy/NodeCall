@@ -34,7 +34,8 @@ namespace compiler{
     CompilerEnvironment::CompilerEnvironment(NCRuntime* runtime):
         runtime(runtime),
         newlyCreatedVariables(runtime->objects),
-        newlyCreatedQuearies(runtime->quearies)
+        newlyCreatedQuearies(runtime->quearies),
+        nodeKeys(runtime->nodeKeys)
     {}
 
     //Adds an extention to the environment, so you can add to the environment the source will
@@ -67,6 +68,7 @@ namespace compiler{
             //If it was seen before hand and mistaken for a variable
             if(!var->has_value()){
                 uint16_t newNodeIndex = runtime->nodes.size();
+                nodeKeys[name] = newNodeIndex;
                 runtime->nodes.emplace_back();
                 (*var) = newNodeIndex;
             }
@@ -74,6 +76,7 @@ namespace compiler{
         }
 
         uint16_t newNodeIndex = runtime->nodes.size();
+        nodeKeys[name] = newNodeIndex;
         runtime->nodes.emplace_back();
         auto nodeVariable = getNewVariable(name);
         (*nodeVariable) = newNodeIndex;
@@ -683,6 +686,7 @@ NCRuntime* NodeCall::compile(std::ifstream& file, const std::initializer_list<NC
         env.addExtention(*e);
 
     auto runtime = env.compile(source);
+
     delete baselineNodeCallFunctionality;
     return runtime;
 }

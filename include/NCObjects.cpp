@@ -105,7 +105,9 @@ void NCRuntime::returnConditional(){
     callFrames.pop();
 }
 
-void NCRuntime::run(){
+void NCRuntime::run(std::string node){
+    currentFrame.commandNumber = 0;
+    currentFrame.nodeNumber = nodeKeys[node];
     while(!calledTerminate){
         while(currentFrame.commandNumber < nodes[currentFrame.nodeNumber].size()){
             NCFunction& instruction = nodes[currentFrame.nodeNumber][currentFrame.commandNumber];

@@ -71,6 +71,7 @@ namespace compiler{
         //you can delete it all later
         std::vector<std::any*>& newlyCreatedVariables;
         std::vector<NCQueary*>& newlyCreatedQuearies;
+        std::unordered_map<std::string, uint16_t>& nodeKeys;
 
         //Sets up he environment with the runtime it will compile into
         CompilerEnvironment(NCRuntime* runtime);
@@ -88,6 +89,15 @@ namespace compiler{
         //Either makes a new node, or gets you the index of the requested node
         uint16_t getNode(const std::string name);
         
+        void announceMaps(){
+            printf("In CompEnv:\n");
+            for(auto& [A, B] : nodeKeys)
+                printf("\t%s\t%u\n", A.c_str(), B);
+            printf("\nIn runtime:\n");
+            for(auto& [A, B] : runtime->nodeKeys)
+                printf("\t%s\t%u\n", A.c_str(), B);
+        }
+
         //Compiles the given source in the environment
         NCRuntime* compile(const std::vector<std::string>& lines);
     };
