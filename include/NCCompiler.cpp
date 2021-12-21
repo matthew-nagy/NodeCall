@@ -433,6 +433,9 @@ namespace compiler{
             case token_type::boolean:
                 newArg = token.form == "true" ? true : false;
                 break;
+            case variable:
+                newArg = env.variables[token.form];
+                break;
             case userDefined:
                 //Make it point to the same variable
                 if(env.variables.count(token.form) > 0){
@@ -536,7 +539,10 @@ namespace compiler{
         NCFunction& thisFunc = functions[functions.size() - 1];
         thisFunc.func = env.functions[tokens[0]->form];
         thisFunc.lineNumber = tokens[0]->lineOn;
-        std::string nodeName = "CN-"+std::to_string(thisFunc.lineNumber);
+        //This - makes it so that it can never be accessed from a program
+        //The lexer will think its a negative number and error out
+        //This lets you hide the variable
+        std::string nodeName = "-CN-"+std::to_string(thisFunc.lineNumber);
         if(tokens[1]->type != openBracket)
             throw(new NC_Parser_Expected_Open_Bracket);
         
@@ -656,6 +662,10 @@ namespace compiler{
 
         auto tokens = lexer(source, *this);
 
+        printf("Recieved tokens are");
+        for(auto& t : tokens)
+            t->print();
+
         parser(tokens, *this, this->runtime->nodes);
 
         for(auto t : tokens)
@@ -689,4 +699,27 @@ NCRuntime* NodeCall::compile(std::ifstream& file, const std::initializer_list<NC
 
     delete baselineNodeCallFunctionality;
     return runtime;
+}
+
+
+std::pair<NCRuntime*, ncprivate::compiler::CompilerEnvironment*> NodeCall::compileWithEnvironment(std::ifstream& file, const std::initializer_list<NCExtention*>& extentions){
+    std::vector<std::string> source;
+    std::string line;
+    while(std::getline(file, line))
+        source.emplace_back(std::move(line));
+    
+    NCExtention* baselineNodeCallFunctionality = new NCExtention(
+        ncprivate::standard_functions,
+        ncprivate::standard_quearies,
+        std::map<std::string, std::any*>{}
+    );
+    ncprivate::compiler::CompilerEnvironment* env = new ncprivate::compiler::CompilerEnvironment(new NCRuntime);
+    env->addExtention(*baselineNodeCallFunctionality);
+    for(auto& e : extentions)
+        env->addExtention(*e);
+
+    auto runtime = env->compile(source);
+
+    delete baselineNodeCallFunctionality;
+    return std::pair(runtime, env);
 }

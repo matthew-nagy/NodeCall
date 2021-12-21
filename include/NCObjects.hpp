@@ -104,6 +104,9 @@ namespace ncprivate{
 namespace compiler{
     struct CompilerEnvironment;
 }}
+//Extentions onto the node call system, you can get one from the runtime
+//to let you compile scripts in identical environments (sharing variables)
+struct NCExtention;
 
 
 struct NCRuntime{

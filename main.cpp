@@ -1,4 +1,5 @@
 #include "include/NCCompiler.hpp"
+#include "include/NCRepl.hpp"
 
 #include <iostream>
 int main(){
@@ -18,8 +19,17 @@ int main(){
     std::cin >> answer;
 
     std::ifstream file("test_scripts/" + scripts[std::atoi(answer.c_str()) - 1]);
-    NCRuntime* runtime = NodeCall::compile(file, {});
+    NCRepl commandLine;
+    NCRuntime* runtime = commandLine.compile(file, {});
     runtime->run();
+
+    std::string input = "";
+    while(input != "quit"){
+        std::getline(std::cin, input);
+        if(input != "")
+            commandLine.execute(input);
+    }
+
     delete runtime;
 
     return 0;

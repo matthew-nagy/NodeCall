@@ -187,4 +187,5 @@ namespace compiler{
 class NodeCall{
 public:
     static NCRuntime* compile(std::ifstream& file, const std::initializer_list<NCExtention*>& extentions);
+    static std::pair<NCRuntime*, ncprivate::compiler::CompilerEnvironment*> compileWithEnvironment(std::ifstream& file, const std::initializer_list<NCExtention*>& extentions);
 };
