@@ -5,10 +5,7 @@ namespace ops{
 #define opdef(NAME) void NAME (NCRuntime& environment, std::vector<NCArgument>& args, NC_Runtime_Log& runLog, unsigned lineNumber)
 
     opdef(assign){
-        std::any& val = args[1].getValue(runLog);
-        printf("Got the value from mul, the type is '%s'\n", val.type().name());
-        args[0].getValue(runLog) = val;
-        //args[0].getValue(runLog) = args[1].getValue(runLog);
+        args[0].getValue(runLog) = args[1].getValue(runLog);
     }
 
     opdef(print){

@@ -55,6 +55,7 @@ namespace compiler{
     ERROR_MAKE(NC_Parser_Expected_Open_Bracket);                //A queary or function wasn't called properly
     ERROR_MAKE(NC_Parser_Missing_Terminator);                   //MISSING SEMICOLON ON LINE XYZ
     ERROR_MAKE(NC_Parser_Invalid_Terminator);                   //For example "};" is not allowed
+    ERROR_MAKE(NC_Parser_Expected_Function);                    //Been told to parse a function, but the first symbol isn't a function?
 
     ERROR_MAKE(NC_Parser_Expected_Node);                        //At the highest levels of the program, only node names are allowed
     ERROR_MAKE(NC_Parser_Expected_Node_Start);                  //After a nodes name a '>' must appear
@@ -245,7 +246,7 @@ namespace compiler{
 
     //Given a multi string token, a hint on what it may be, and a compiler environment, this function figures out the exact token type it is, and adds it
     //to the list of tokens
-    void addLongToken(unsigned lineOn, bool& onLongToken, bool& seenFloatingPoint, std::string& currentString, token_type longTokenType, std::vector<Token*>& tokens, CompilerEnvironment& compEnv){
+    void addLongToken(unsigned lineOn, bool& onLongToken, bool& seenFloatingPoint, std::string& currentString, token_type& longTokenType, std::vector<Token*>& tokens, CompilerEnvironment& compEnv){
         onLongToken = false;
         //Only keep looking at the token and adding it if it shouldn't be ignored
         if(ignoredTokens.count(currentString) == 0){
@@ -265,6 +266,7 @@ namespace compiler{
         tokens.emplace_back(new Token(longTokenType, std::move(currentString)));
         tokens[tokens.size()-1]->lineOn = lineOn;
         currentString = "";
+        longTokenType = userDefined;
     }
 
     std::vector<Token*> lexer(MultiLineString& string, CompilerEnvironment& compEnv){
@@ -458,8 +460,10 @@ namespace compiler{
                 newArg = token.form == "true" ? true : false;
                 break;
             case userDefined:
+                printf("USRDFN\n");
                 //Make it point to the same variable
                 if(env.variables.count(token.form) > 0){
+                    printf("Recognised '%s' as a variable already\n", token.form.c_str());
                     newArg = env.variables[token.form];
                 }
                 else if(env.quearies.count(token.form) > 0)
@@ -467,7 +471,9 @@ namespace compiler{
                 else if(env.functions.count(token.form) > 0)
                     throw(new NC_Parser_Unexpected_Function_Call_Mid_Function);
                 else{//Need to make a new variable!
+                    printf("Making new var for '%s'!\n", token.form.c_str());
                     newArg = env.getNewVariable(token.form);
+                    printf("var made\n");
                 }
                 break;
             default:
@@ -563,6 +569,8 @@ namespace compiler{
             printf("\t");
             t->print();
         }
+        // if(tokens[0]->type != function)
+        //     throw(new NC_Parser_Expected_Function);
 
         functions.emplace_back();
         NCFunction& thisFunc = functions[functions.size() - 1];

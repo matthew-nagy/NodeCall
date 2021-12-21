@@ -19,7 +19,6 @@ NCArgument& NCArgument::operator=(const NCArgument& right){
 
 
 NCArgument::NCArgument(const NCArgument& cpyf){
-    printf("Calling = from copy\n");
     *this = cpyf;
 }
 

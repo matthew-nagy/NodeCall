@@ -34,7 +34,6 @@ namespace queary{
         }   \
         else if(arg1.type() == typeid(float)){  \
             answer = std::any_cast<float>(arg1) OP std::any_cast<float>(arg2);  \
-            printf("Multiplying two floats, results type is '%s'\n", answer.type().name()); \
         }   \
         else{    \
             runLog.addLog(ncras_Severe_Error, lineNumber, "Cannot " #DETAIL " two non identical, numeric types");\

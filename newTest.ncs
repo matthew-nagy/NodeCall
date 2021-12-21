@@ -6,7 +6,6 @@ main>
     assign(num, 4.0);
     assign(otherNum, 2.0);
     assign(result, mul(num, otherNum));
-    debugVar(result);
     println("This value should be 8: ", string(result), "<- wowie! look at that");
     link_to(second_node);
 >
@@ -15,7 +14,7 @@ second_node>
     println("Here we are in second node!");
     println("Time to test returning");
     call_node(call_test_node);
-    printf("Returned in correct place!");
+    print("Returned in correct place!");
     end();
 >
 
