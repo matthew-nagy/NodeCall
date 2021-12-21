@@ -110,69 +110,26 @@ struct NCRuntime{
 friend struct ncprivate::compiler::CompilerEnvironment;
 
     //Link to with no trace. No new call frame
-    void linkTo(uint16_t nodeNumber){
-        currentFrame.nodeNumber = nodeNumber;
-        currentFrame.commandNumber = 0;
-    }
+    void linkTo(uint16_t nodeNumber);
 
     //call as it it were a function, with a functionally marked call frame
-    void callFunctionally(uint16_t nodeNumber){
-        callFrames.emplace(currentFrame);
-        currentFrame.commandNumber = 0;
-        currentFrame.nodeNumber = nodeNumber;
-        currentFrame.callType = nc_call_Function;
-    }
+    void callFunctionally(uint16_t nodeNumber);
 
     //This is some if or loop. Create a new call framne marked as conditional
-    void callConditional(uint16_t nodeNumber){
-        callFrames.emplace(currentFrame);
-        currentFrame.commandNumber = 0;
-        currentFrame.nodeNumber = nodeNumber;
-        currentFrame.callType = nc_call_Conditional;
-    }
+    void callConditional(uint16_t nodeNumber);
 
-    void terminate(){
-        //Tell the environment it should stop
-        calledTerminate = true;
-        //End the node, the environment will now see that flag
-        currentFrame.commandNumber = nodes[currentFrame.nodeNumber].size();
-    }
+    void terminate();
 
-    void returnFunc(){
-        popCallFramesUntil(nc_call_Function);
-    }
-    void returnConditional(){
-        popCallFramesUntil(nc_call_Conditional);
-    }
+    void returnFunc();
+    void returnConditional();
 
-    void run(){
-        while(!calledTerminate){
-            while(currentFrame.commandNumber < nodes[currentFrame.nodeNumber].size()){
-                NCFunction& instruction = nodes[currentFrame.nodeNumber][currentFrame.commandNumber];
-                currentFrame.commandNumber++;
-                instruction(*this, runtimeLog);
-            }
-        }
-    }
+    void run();
 
-    NCRuntime():
-        currentFrame({0, 0, nc_call_Function})
-    {}
+    NCRuntime();
 
-    ~NCRuntime(){
-        for(std::any* v : objects)
-            delete v;
-        for(NCQueary* q : quearies)
-            delete q;
-    }
+    ~NCRuntime();
 
 private:
-    void popCallFramesUntil(NCCallType type){
-        while(callFrames.top().callType != type)
-            callFrames.pop();
-        currentFrame = callFrames.top();
-        callFrames.pop();
-    }
 
     std::vector<std::vector<NCFunction>> nodes;
     //These are just the objects and queries owned by this runtime;some others may be stored elsewhere
@@ -186,58 +143,4 @@ private:
     std::atomic_bool calledTerminate = false;
 };
 
-//Possible functions
-/*
-
-    assign
-    println
-    if
-    else    (used with a sort of global "what did the last if do" variable)
-    while
-    link_to (as with old version of nc, moves execution)
-    call_node (new; pushes the current node and instruction number onto a call stack. 
-                    A sort of "call as function", but with all avriables still global)
-    return
-    
-    create_list
-    push
-    pop
-    index
-
-    pause
-    end
-    throw
-
-//Possible quearies
-    add
-    sub
-    mul
-    div
-    mod
-    lg_>>
-    lg_<<
-    lg_&&
-    lg_||
-    lg_!
-    lg_^
-    and
-    or
-    not
-    cmp==
-    cmp!=
-    cmp_<
-    cmp_>
-    cmp_<=
-    cmp_>=
-
-    size
-    get_type
-
-    input
-
-    to_int
-    to_float
-    to_string
-    to_bool
-*/
 

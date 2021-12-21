@@ -107,7 +107,7 @@ namespace ops{
         {"assign", ops::assign}, {"print", ops::print}, {"println", ops::println},
         {"debugVar", ops::debugVariable},
         {"if", ops::conditional_if}, {"if_else", ops::conditional_if_else},
-        {"link_conditionaly",ops::link_conditionally}, {"link_to", ops::link_to},
+        {"link_conditionally",ops::link_conditionally}, {"link_to", ops::link_to},
         {"call_node", ops::call_node}, {"return", ops::return_from}, {"break", ops::break_from},
         {"end", ops::end}, {"new_vector", ops::new_vector}, {"push_front", ops::push_front},
         {"push_back", ops::push_back}, {"erase", ops::erase}, {"clear", ops::clear}

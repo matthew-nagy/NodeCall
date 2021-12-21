@@ -1,0 +1,36 @@
+#Some tests to prove conditionals work
+
+main>
+
+    println("Testing if statements");
+
+    if(true){
+        println("Success: If true works");
+    }
+
+    if_else(false){
+        println("Failure: This messed up, an if(false) was run");
+    }
+    {
+        println("Success: If false *doesn't* work, but else does");
+    }
+
+    assign(shouldBe5, add(2, 3));
+    if(==(shouldBe5, 5)){
+        println("Success: Boolean comparison quearies work");
+    }
+
+    assign(counter, 0);
+    link_conditionally(pseudoWhileNode);
+    println("Successfully broke out of the pseudo while loop"); 
+
+>
+
+pseudoWhileNode>
+    println("\tWhile counter is ", string(counter));
+    assign(counter, add(counter, 1));
+    if(!=(counter, 11)){
+        link_to(pseudoWhileNode);
+    }#else
+    break();
+>
