@@ -4,6 +4,7 @@
 int main(){
     std::vector<std::string> scripts = {
         "conditional_tests.ncs",
+        "logic_tests.ncs",
         "maths_test.ncs"
     };
 

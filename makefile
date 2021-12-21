@@ -1,7 +1,7 @@
 COMPILER = clang++
 COMPILER_FLAGS = -std=c++17
 OPTIMISATION_FLAGS = -O3
-DEBUG_FLAGS = -ggdb -g3 -O0 -fsanitize=address
+DEBUG_FLAGS = -ggdb -g3 -O0 -fsanitize=address -pedantic -Wall
 
 NC_SOURCE = $(wildcard include/*cpp)
 

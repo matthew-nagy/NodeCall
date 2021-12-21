@@ -98,7 +98,7 @@ namespace queary{
         std::any& arg1 = args[0].getValue(runLog);
         std::any answer;
         if(arg1.type() == typeid(int)){
-            answer = !std::any_cast<int>(arg1);
+            answer = int(INT32_MAX) ^ std::any_cast<int>(arg1);
         }
         else if(arg1.type() == typeid(bool)){
             answer = !std::any_cast<bool>(arg1);
@@ -222,6 +222,7 @@ namespace queary{
         if(arg2.type() == typeid(int)){
             if(arg1.type() == typeid(std::vector<std::any>)){
                 auto& vec = *std::any_cast<std::vector<std::any>>(&arg1);
+                answer = vec[std::any_cast<int>(arg1)];
             }
             else{
                 runLog.addLog(ncras_Badly_Formed_Function, lineNumber, "Non-vector objects are not subscriptable");

@@ -41,9 +41,9 @@ private:
         }
 
         Log_Message(nc_runtime_alert_severity severity, unsigned lineNum, const std::string& message):
+            message(message),
             severity(severity),
-            lineNumber(lineNum),
-            message(message)
+            lineNumber(lineNum)
         {}
     };
 
