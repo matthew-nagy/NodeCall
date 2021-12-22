@@ -126,6 +126,8 @@ friend struct ncprivate::compiler::CompilerEnvironment;
     void returnFunc();
     void returnConditional();
 
+    NC_Runtime_Log& getRunLog();
+
     void run(std::string node = "main");
 
     NCRuntime();

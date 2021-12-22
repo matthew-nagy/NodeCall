@@ -105,6 +105,10 @@ void NCRuntime::returnConditional(){
     callFrames.pop();
 }
 
+NC_Runtime_Log& NCRuntime::getRunLog(){
+    return runtimeLog;
+}
+
 void NCRuntime::run(std::string node){
     currentFrame.commandNumber = 0;
     currentFrame.nodeNumber = nodeKeys[node];
