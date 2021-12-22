@@ -28,6 +28,11 @@ public:
         compilationMutex.unlock();
     }
 
+    NCRepl(){
+        //Make a single empty node
+        virtualSource.emplace_back();
+    }
+
 private:
     ncprivate::compiler::CompilerEnvironment* env;
     NCRuntime* runtime;
@@ -99,8 +104,13 @@ private:
     }
 
     void executeCommand(const std::string& input){
-        NCRuntime* miniRuntime = env->compile(std::vector<std::string>{"cmdMain>", input, ">"});
-        miniRuntime->run("cmdMain");
-        delete miniRuntime;
+        ncprivate::compiler::MultiLineString mls(std::vector<std::string>{input});
+        auto tokens = ncprivate::compiler::lexer(mls, *env, true);
+        ncprivate::compiler::parseFunction(tokens, *env, 0, virtualSource);
+        for(auto* t : tokens)
+            delete t;
+        virtualSource[0][0](*env->runtime, env->runtime->getRunLog());
+        virtualSource[0].clear();
     }
+    std::vector<std::vector<NCFunction>> virtualSource;
 };
