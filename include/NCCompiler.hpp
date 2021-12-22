@@ -163,7 +163,7 @@ namespace compiler{
     //A switch statement to handle the progression of the lexer's finite state machine
     void lexerSwitch(lexer_state& state, bool& onLongToken, MultiLineString& string, std::string& currentString, token_type& longTokenType, bool& seenDecimalPoint, std::vector<Token*>& tokens, CompilerEnvironment& compEnv);
 
-    std::vector<Token*> lexer(MultiLineString& string, CompilerEnvironment& compEnv);
+    std::vector<Token*> lexer(MultiLineString& string, CompilerEnvironment& compEnv, bool commandlineArg = false);
 
 
     //Adds a new argument to the given vector, based off the type and form of the given token in this environment

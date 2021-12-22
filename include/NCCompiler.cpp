@@ -378,12 +378,12 @@ namespace compiler{
             
     }
 
-    std::vector<Token*> lexer(MultiLineString& string, CompilerEnvironment& compEnv){
-        lexer_state state = lookingForNode;
+    std::vector<Token*> lexer(MultiLineString& string, CompilerEnvironment& compEnv, bool commandlineArg){
+        lexer_state state = commandlineArg ? lookingInNode : lookingForNode;
         std::string currentString = "";
         std::vector<Token*> tokens;
         tokens.reserve(string.numOfLines() * 6); //Assming an average of a function, open,close brackets, semicolon and 2 arguments. Some will have more, some less
-        bool inNode = false;
+        bool inNode = commandlineArg;
         bool onLongToken = false;
         bool seenDecimalPoint = false;
         token_type longTokenType = userDefined;
