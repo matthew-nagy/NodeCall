@@ -662,10 +662,6 @@ namespace compiler{
 
         auto tokens = lexer(source, *this);
 
-        printf("Recieved tokens are");
-        for(auto& t : tokens)
-            t->print();
-
         parser(tokens, *this, this->runtime->nodes);
 
         for(auto t : tokens)
