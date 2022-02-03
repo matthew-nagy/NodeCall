@@ -13,6 +13,7 @@
 #include <mutex>
 #include <thread>
 #include <string>
+#include <stack>
 
 namespace nc{
     struct Queary;
@@ -21,21 +22,40 @@ namespace nc{
     class runtime_resources;
     class Runtime;
 
+    //Some value to be used. May be a constant stored once, may be a variable shared across the program
     typedef std::shared_ptr<std::any> value;
+    //A list of arguments to pass to a function
     typedef std::vector<argument> argument_list;
+    //A unique pointer to a certain runtime's available resources. Often passed as an argument to function pointers
     typedef std::unique_ptr<runtime_resources> unique_run_resource;
+    //A way of pointing to a node of execution. Node Call doesn't nativly support 16 bit ints,
+    //so it is easily identifiable by time in program
     typedef uint16_t node_index;
+    //A series of operations is all a node is
+    typedef std::vector<Operation> node;
 
+    //A queary function performs some computation on its arguments, then returns a result
     typedef value(*QuearyFunction)(const argument_list&, unique_run_resource&);
+    //An operation is presumed to perform some operation on the global state, facilitated through its arguments
     typedef void(*OperationFunction)(const argument_list&, unique_run_resource&);
 
+    //A mapping of queary names to their functions. Used in the compiler, where multiple tables may be provided
     typedef std::unordered_map<std::string, QuearyFunction> QuearyTable;
+    //A mapping of operation names to their functions. Used in the compiler, where multiple tables may be provided
     typedef std::unordered_map<std::string, OperationFunction> OperationTable;
 
+    //Different ways a node can be called
     enum call_type{
-        call_cond_breakable,
-        call_cond_definate,
-        call_func
+        call_cond_breakable,    //A conditional which 'break' can exit (while loop, do while, etc)
+        call_cond_definate,     //A conditional which 'break' would ignore (if, else)
+        call_func,              //It was ran as a function
+        call_enterance_point    //This node was the enterence point of the program. If you try to get past this, throw an error
+    };
+    //A method of storing a snapshot of node execution
+    struct call_frame{
+        call_type exitType;         //How was it this frame was exited?
+        node_index index;           //What node was this frame executing?
+        uint32_t nextInstruction;   //What was the index of the next instruction to execute
     };
 
     class argument{
@@ -104,6 +124,7 @@ namespace nc{
         }
     };
 
+    //A way of exposing any number of objects to passed in library tables
     class variable_blackboard{
     public:
         template<class T>
@@ -125,6 +146,7 @@ namespace nc{
         std::unordered_map<std::type_index, std::any> map;
     }; 
 
+    //The runtime of a Node Call script.
     class Runtime{
         friend class runtime_resources;
     public:
@@ -132,13 +154,17 @@ namespace nc{
             return internalBlackboard;
         }
 
-        runtime_resources getRuntimeResource(){
-            return runtime_resources(*this);
+        std::unique_ptr<runtime_resources> getRuntimeResource(){
+            return std::make_unique<runtime_resources>(*this);
         }
     private:
         variable_blackboard internalBlackboard;
         std::condition_variable conditionVariable;
         std::mutex internalMutex;
+
+        std::vector<node> nodes;
+        call_frame currentFrame;
+        std::stack<call_frame> callStack;
     };
 
     //This class has access to the full runtime, but only exposes what Operation's will need
