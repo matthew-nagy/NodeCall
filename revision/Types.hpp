@@ -14,6 +14,8 @@
 #include <thread>
 #include <string>
 #include <stack>
+#include <iostream>
+#include <fstream>
 
 namespace nc{
     struct Queary;
@@ -35,9 +37,9 @@ namespace nc{
     typedef std::vector<Operation> node;
 
     //A queary function performs some computation on its arguments, then returns a result
-    typedef value(*QuearyFunction)(const argument_list&, unique_run_resource&);
+    typedef value(*QuearyFunction)(argument_list&, unique_run_resource&);
     //An operation is presumed to perform some operation on the global state, facilitated through its arguments
-    typedef void(*OperationFunction)(const argument_list&, unique_run_resource&);
+    typedef void(*OperationFunction)(argument_list&, unique_run_resource&);
 
     //A mapping of queary names to their functions. Used in the compiler, where multiple tables may be provided
     typedef std::unordered_map<std::string, QuearyFunction> QuearyTable;
@@ -60,8 +62,8 @@ namespace nc{
 
     class argument{
     public:
-        std::any* getValue(unique_run_resource& environment){
-            return (innerQueary == nullptr) ? assignedValue.get() : (*innerQueary)(environment).get();
+        value getValue(unique_run_resource& environment){
+            return (innerQueary == nullptr) ? assignedValue : (*innerQueary)(environment);
         }
 
         argument& operator=(std::any* constant){
@@ -94,11 +96,11 @@ namespace nc{
 
     struct Queary{
         QuearyFunction func;
-        const argument_list arguments;
+        argument_list arguments;
         #ifdef _DEBUG 
         unsigned lineNum;
         #endif
-        value operator()(unique_run_resource& environment)const{
+        value operator()(unique_run_resource& environment){
             return func(arguments, environment);
         }
 
@@ -114,7 +116,7 @@ namespace nc{
 
     struct Operation{
         OperationFunction func;
-        const argument_list arguments;
+        argument_list arguments;
         #ifdef _DEBUG 
         unsigned lineNum;
         #endif
