@@ -3,17 +3,22 @@
 #define NC_STANDARD_LIBRARY_HPP
 
 #include "Types.hpp"
+#include <exception>
+#include <cmath>
 
-namespace nc{   namespace stlib{    
+
+#define ERROR_MAKE(NAME) class NAME : public std::logic_error{ public: NAME () : std::logic_error( #NAME ){} }  
+
+namespace nc{   namespace stlib{  
+
+ERROR_MAKE(INVALID_ARGUMENT_TYPE);
 
 extern const QuearyTable _standard_quearies;
 extern const OperationTable _standard_operations;
 
+bool is_true(argument& val, unique_run_resource& runResource);
 
-    typedef value(*QuearyFunction)(const argument_list&, unique_run_resource&);
-    typedef void(*OperationFunction)(const argument_list&, unique_run_resource&);
-
-#define qdef(name) value name (const argument_list& args, unique_run_resource& runResource)
+#define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
 namespace q{
     //Mathmatic quearies
     qdef(add);
@@ -21,6 +26,7 @@ namespace q{
     qdef(div);
     qdef(mul);
     qdef(mod);
+    qdef(square_root);
 
     //Logical quearies
     qdef(lshift);
@@ -33,7 +39,6 @@ namespace q{
     //Binary quearies
     qdef(band);
     qdef(bor);
-    qdef(bnot);
     qdef(beq);
     qdef(bneq);
     qdef(bless);
@@ -73,7 +78,7 @@ namespace q{
 }
 #undef qdef
 
-#define opdef(name) void name (const argument_list& args, unique_run_resource& runResource)
+#define opdef(name) void name (argument_list& args, unique_run_resource& runResource)
 namespace op{
     //IO
     opdef(print);
