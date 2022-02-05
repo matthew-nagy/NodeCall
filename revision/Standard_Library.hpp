@@ -76,6 +76,7 @@ namespace q{
     qdef(itos);
     qdef(ftos);
     qdef(btos);
+    qdef(ttos);
 }
 #undef qdef
 

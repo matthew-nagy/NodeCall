@@ -361,6 +361,9 @@ namespace q{
     qdef(btos){
         ConvFunc(bool, std::string, std::to_string, );
     }
+    qdef(ttos){
+        return makeVal<std::string>(std::any_cast<std::type_index>(*args[0].getValue(runResource)).name());
+    }
 }
 #undef qdef
 
@@ -377,7 +380,7 @@ namespace q{
         {"typeof", q::getType},
         {"foti", q::ftoi}, {"stoi", q::stoi}, {"btoi", q::btoi},
         {"itof", q::itof}, {"btof", q::btof}, {"stof", q::stof},
-        {"itob", q::itob}, {"ftob", q::ftob}, {"stob", q::stob}
+        {"itob", q::itob}, {"ftob", q::ftob}, {"stob", q::stob}, {"ttos", q::ttos}
     };
 
 }}
