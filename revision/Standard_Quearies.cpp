@@ -3,6 +3,11 @@
 
 namespace nc{   namespace stlib{
 
+//Definitions of all quearies.
+//What they do should be selfexplanatory
+//The non qdef functions are utility functions used throughout
+
+//One way this could be cleaned up is making macros for fetching data types from a value pointer
 
 bool is_true(argument& val, unique_run_resource& runResource){
     value arg1 = val.getValue(runResource);
@@ -221,8 +226,29 @@ namespace q{
     }
     
     //TO DO
-    bool leftLessRight(argument& arg1, argument& arg2, unique_run_resource& runResource){}
-    bool leftMoreRight(argument& arg1, argument& arg2, unique_run_resource& runResource){}
+    bool leftLessRight(argument& arg1, argument& arg2, unique_run_resource& runResource){
+        value v1 = arg1.getValue(runResource);
+        value v2 = arg2.getValue(runResource);
+
+        if(v1->type() == typeid(int)){
+            return std::any_cast<int>(*v1) < std::any_cast<int>(*v2);
+        }
+        else if(v1->type() == typeid(float)){
+            return std::any_cast<float>(*v1) < std::any_cast<float>(*v2);
+        }
+        throw(new INVALID_ARGUMENT_TYPE);
+    }
+    bool leftMoreRight(argument& arg1, argument& arg2, unique_run_resource& runResource){
+        value v1 = arg1.getValue(runResource);
+        value v2 = arg2.getValue(runResource);
+
+        if(v1->type() == typeid(int)){
+            return std::any_cast<int>(*v1) > std::any_cast<int>(*v2);
+        }
+        else if(v1->type() == typeid(float)){
+            return std::any_cast<float>(*v1) > std::any_cast<float>(*v2);
+        }
+        throw(new INVALID_ARGUMENT_TYPE);}
 
     qdef(bless){
         return makeVal<bool>(leftLessRight(args[0], args[1], runResource));
@@ -243,6 +269,9 @@ namespace q{
         return std::any_cast<std::shared_ptr<std::vector<std::any>>>(*arg.getValue(runResource));
     }
 
+    qdef(list_create){
+        return std::make_shared<std::any>(std::make_any<std::vector<std::any>>());
+    }
     qdef(list_size){
         return makeVal<int>(getAnyVecPtr(args[0], runResource)->size());
     }
@@ -250,10 +279,28 @@ namespace q{
         int index = std::any_cast<int>(*args[1].getValue(runResource));
         return std::make_shared<std::any>((*getAnyVecPtr(args[0], runResource))[index]);
     }
-    qdef(list_pop);
-    qdef(list_pop_front);
-    qdef(list_front);
-    qdef(list_tail);
+    qdef(list_pop){
+        std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
+        value toret = std::make_shared<std::any>(vec->back());
+        vec->pop_back();
+        return toret;
+    }
+    qdef(list_pop_front){
+        std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
+        value toret = std::make_shared<std::any>(vec->front());
+        vec->erase(vec->begin());
+        return toret;
+    }
+    qdef(list_front){
+        std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
+        value toret = std::make_shared<std::any>(vec->front());
+        return toret;
+    }
+    qdef(list_tail){
+        std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
+        value toret = std::make_shared<std::any>(vec->back());
+        return toret;
+    }
 
 
     //IO quearies
@@ -265,31 +312,72 @@ namespace q{
 
 
     //Type quearies and conversions
-    qdef(getType);
+    qdef(getType){
+        return makeVal<std::type_index>(args[0].getValue(runResource)->type());
+    }
 
-    qdef(ftoi);
-    qdef(stoi);
-    qdef(btoi);
+#define ConvFunc(type, wantedType, functionStart, functionEnd) return makeVal< wantedType > ( functionStart( std::any_cast<type>(*args[0].getValue(runResource)) functionEnd ))
 
-    qdef(itof);
-    qdef(btof);
-    qdef(stof);
+    qdef(ftoi){
+        ConvFunc(float, int, int , );
+    }
+    qdef(stoi){
+        ConvFunc(std::string, int, std::atoi, .c_str());
+    }
+    qdef(btoi){
+        ConvFunc(bool, int, int, );
+    }
 
-    qdef(itob);
-    qdef(ftob);
-    qdef(stob);
+    qdef(itof){
+        ConvFunc(int, float, float, );
+    }
+    qdef(btof){
+        ConvFunc(bool, float, float, );
+    }
+    qdef(stof){
+        ConvFunc(std::string, float, std::atof, .c_str());
+    }
 
-    qdef(itos);
-    qdef(ftos);
-    qdef(btos);
+    bool stob(const std::string& s){
+        return s == "true";
+    }
+
+    qdef(itob){
+        ConvFunc(int, bool, bool, );
+    }
+    qdef(ftob){
+        ConvFunc(float, bool, bool, );
+    }
+    qdef(stob){
+        ConvFunc(std::string, bool, stob, );
+    }
+
+    qdef(itos){
+        ConvFunc(int, std::string, std::to_string, );
+    }
+    qdef(ftos){
+        ConvFunc(float, std::string, std::to_string, );
+    }
+    qdef(btos){
+        ConvFunc(bool, std::string, std::to_string, );
+    }
 }
 #undef qdef
 
 
-    //AND OTHERS
+    //The names of all the quaries, and their function pointers
     const QuearyTable _standard_quearies = {
         {"add", q::add}, {"sub", q::sub}, {"mul", q::mul}, {"div", q::div}, {"mod", q::mod}, {"sqrt", q::square_root},
-        {"lshift", q::lshift}, {"rshift", q::rshift}, {"&", q::land}, {"|", q::lor}, {"!", q::lnot}, {"^", q::lxor}
+        {"lshift", q::lshift}, {"rshift", q::rshift}, {"&", q::land}, {"|", q::lor}, {"!", q::lnot}, {"^", q::lxor},
+        {"and", q::band}, {"or", q::bor}, {"equals", q::beq}, {"not_equals", q::bneq}, 
+        {"less", q::bless}, {"greater", q::bgreater}, {"less_eq", q::blesseq}, {"greater_eq", q::bgreatereq},
+        {"list_create", q::list_create}, {"list_size", q::list_size}, {"list_index", q::list_index}, {"list_pop", q::list_pop},
+        {"list_pop_front", q::list_pop_front}, {"list_front", q::list_front}, {"list_tail", q::list_tail},
+        {"input", q::input},
+        {"typeof", q::getType},
+        {"foti", q::ftoi}, {"stoi", q::stoi}, {"btoi", q::btoi},
+        {"itof", q::itof}, {"btof", q::btof}, {"stof", q::stof},
+        {"itob", q::itob}, {"ftob", q::ftob}, {"stob", q::stob}
     };
 
 }}

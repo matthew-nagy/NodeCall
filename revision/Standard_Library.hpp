@@ -47,6 +47,7 @@ namespace q{
     qdef(bgreatereq);
 
     //list quearies
+    qdef(list_create);
     qdef(list_size);
     qdef(list_index);
     qdef(list_pop);
@@ -101,7 +102,6 @@ namespace op{
     opdef(trust_wait);
 
     //List operations
-    opdef(list_create);
     opdef(list_clear);
     opdef(list_push);
     opdef(list_push_back);
