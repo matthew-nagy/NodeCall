@@ -18,6 +18,18 @@ extern const OperationTable _standard_operations;
 
 bool is_true(argument& val, unique_run_resource& runResource);
 
+
+struct if_pack{
+    argument_list triggers;
+    std::vector<node_index> resultantNodes;
+    node_index elseNode;
+    bool hasFinalElse;
+};
+struct while_top_pack{
+    argument trigger;
+    node_index node;
+};
+
 #define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
 namespace q{
     //Mathmatic quearies
