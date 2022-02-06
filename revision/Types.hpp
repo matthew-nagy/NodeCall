@@ -2,12 +2,12 @@
 #ifndef NC_TYPES_HPP
 #define NC_TYPES_HPP
 
-#include<any>
-#include<memory>
-#include<vector>
-#include<initializer_list>
-#include<unordered_map>
-#include<typeindex>
+#include <any>
+#include <memory>
+#include <vector>
+#include <initializer_list>
+#include <unordered_map>
+#include <typeindex>
 #include <stdint.h>
 #include <condition_variable>
 #include <mutex>
@@ -16,7 +16,11 @@
 #include <stack>
 #include <iostream>
 #include <fstream>
+#include <atomic>
+#include <exception>
 
+
+#define ERROR_MAKE(NAME) class NAME : public std::logic_error{ public: NAME () : std::logic_error( #NAME ){} }  
 namespace nc{
     struct Queary;
     class Operation;
@@ -126,6 +130,18 @@ namespace nc{
         }
     };
 
+    struct additional_library{
+        std::vector<value> variables;
+        QuearyTable quearies;
+        OperationTable operations;
+    };
+
+    struct program{
+        std::unordered_map<std::string, node_index> nodeMappings;
+        std::vector<node> nodes;
+        std::vector<value> ownedVariables;
+    };
+
     //A way of exposing any number of objects to passed in library tables
     class variable_blackboard{
     public:
@@ -146,7 +162,10 @@ namespace nc{
 
     private:
         std::unordered_map<std::type_index, std::any> map;
-    }; 
+    };
+
+    ERROR_MAKE(CANNOT_ENTER_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
+    ERROR_MAKE(CANNOT_CHANGE_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
 
     //The runtime of a Node Call script.
     class Runtime{
@@ -156,17 +175,84 @@ namespace nc{
             return internalBlackboard;
         }
 
-        std::unique_ptr<runtime_resources> getRuntimeResource(){
-            return std::make_unique<runtime_resources>(*this);
+        bool isRunning()const{
+            return running;
         }
-    private:
-        variable_blackboard internalBlackboard;
-        std::condition_variable conditionVariable;
-        std::mutex internalMutex;
 
-        std::vector<node> nodes;
-        call_frame currentFrame;
-        std::stack<call_frame> callStack;
+        void pause(){
+            running = false;
+            //Wakes up the script thread if it was waiting
+            conditionVariable.notify_one();
+        }
+
+        void enterProgramAt(const std::string& nodeName){
+            if(running)
+                throw(new CANNOT_ENTER_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
+            while(callStack.size() > 0)
+                callStack.pop();
+            currentFrame.exitType = call_enterance_point;
+            currentFrame.nextInstruction = 0;
+            currentFrame.index = currentProgram->nodeMappings[nodeName];
+
+            running = true;
+            launchShutdownVariable.notify_one();
+        }
+
+        void loadProgram(std::unique_ptr<program>&& newProgram){
+            if(running)
+                throw(new CANNOT_CHANGE_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
+            currentProgram = std::move(newProgram);
+        }
+
+        Runtime():
+            running(false),
+            shutdownFlag(false),
+            runtimeResource(std::make_unique<runtime_resources>(*this))
+        {
+            //Send of the script thread
+            std::thread([this](){
+                this->runProgram();
+            }).detach();
+        }
+
+        ~Runtime(){
+            shutdownFlag = true;    //Tell script to shutdown
+            pause();                //Make sure its no longer running so it can register that flag
+            launchShutdownVariable.notify_one();    //Launch it again in case it got stuck somewhere ig
+            std::unique_lock<std::mutex> sync(shutdownMutex);   //now take the mutex that the script holds throughout its lifetime. This proves it has finished
+        }
+
+    private:
+        variable_blackboard internalBlackboard;                 //A type agnostic storage for datatypes. Very useful for extentions
+        std::condition_variable conditionVariable;              //Should the script ever need to wait, this is what it waits on
+        std::condition_variable launchShutdownVariable;         //Once the script stopped running, wait on this to launch again, or stop running
+        std::mutex internalMutex;                               //The runtimes own lock to wait on its conditions
+
+        std::atomic_bool running;           //Is there currently a program being run on the script thread?
+        std::atomic_bool shutdownFlag;      //Should the script thread be terminated (ie, is this runtime over)
+        std::mutex shutdownMutex;           //Used to sync the script and main threads once a shutdown has been called
+
+        call_frame currentFrame;            //Current state of the program (node, instruction count, etc)
+        std::stack<call_frame> callStack;   //Stack of all call frames, so a program can break and return
+
+        std::unique_ptr<program> currentProgram;            //The current program being run on the script thread
+        std::unique_ptr<runtime_resources> runtimeResource; //Method of exposing functionality to threads without giving them master control
+
+
+        void runProgram(){
+            //This lock will persist until the thread shuts down
+            std::unique_lock<std::mutex> shutdownMutex;
+            //This lock allows this thread to wait while there is nothing to run
+            std::unique_lock<std::mutex> myLock(internalMutex);
+            while(!shutdownFlag){
+                launchShutdownVariable.wait(myLock);
+                while(running){
+                    Operation& op = currentProgram->nodes[currentFrame.index][currentFrame.nextInstruction];
+                    currentFrame.nextInstruction++;
+                    op(runtimeResource);
+                }
+            }
+        }
     };
 
     //This class has access to the full runtime, but only exposes what Operation's will need
@@ -177,6 +263,7 @@ namespace nc{
             return parent.blackboard();
         }
         void call(call_type type, node_index targetIndex);
+        void sendToNode(node_index index);
         void requestReturn();
         void requestBreak();
         void requestTerminate();
