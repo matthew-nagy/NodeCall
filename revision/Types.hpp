@@ -66,33 +66,15 @@ namespace nc{
 
     class argument{
     public:
-        value getValue(unique_run_resource& environment){
-            return (innerQueary == nullptr) ? assignedValue : (*innerQueary)(environment);
-        }
+        value getValue(unique_run_resource& environment);
 
-        argument& operator=(std::any* constant){
-            assignedValue = std::make_shared<std::any>(constant);
-            innerQueary = nullptr;
-        }
-        argument& operator=(const value& variable){
-            assignedValue = variable;
-            innerQueary = nullptr;
-        }
-        argument& operator=(Queary* queary){
-            innerQueary.reset(queary);
-        }
-    
-        argument(std::any* constant):
-            assignedValue(std::make_shared<std::any>(constant)),
-            innerQueary(nullptr)
-        {}
-        argument(const value& variable):
-            assignedValue(variable),
-            innerQueary(nullptr)
-        {}
-        argument(Queary* queary):
-            innerQueary(queary)
-        {}
+        argument& operator=(std::any* constant);
+        argument& operator=(const value& variable);
+        argument& operator=(Queary* queary);
+
+        argument(std::any* constant);
+        argument(const value& variable);
+        argument(Queary* queary);
     private:
         value assignedValue;
         std::unique_ptr<Queary> innerQueary;
@@ -104,18 +86,9 @@ namespace nc{
         #ifdef _DEBUG 
         unsigned lineNum;
         #endif
-        value operator()(unique_run_resource& environment){
-            return func(arguments, environment);
-        }
+        value operator()(unique_run_resource& environment);
 
-        Queary(QuearyFunction func, const argument_list& arguments):
-            func(func),
-            arguments(arguments)
-        {}
-        Queary(QuearyFunction func, std::initializer_list<argument> arguments):
-            func(func),
-            arguments(arguments)
-        {}
+        Queary(QuearyFunction func, argument_list&& arguments);
     };
 
     struct Operation{
@@ -125,12 +98,11 @@ namespace nc{
         unsigned lineNum;
         #endif
 
-        void operator()(unique_run_resource& environment){
-            func(arguments, environment);
-        }
+        void operator()(unique_run_resource& environment);
     };
 
     struct additional_library{
+        std::unordered_map<std::string, unsigned> variableKey;
         std::vector<value> variables;
         QuearyTable quearies;
         OperationTable operations;
@@ -139,6 +111,7 @@ namespace nc{
     struct program{
         std::unordered_map<std::string, node_index> nodeMappings;
         std::vector<node> nodes;
+        std::unordered_map<std::string, unsigned> variableKey;
         std::vector<value> ownedVariables;
     };
 
@@ -171,56 +144,19 @@ namespace nc{
     class Runtime{
         friend class runtime_resources;
     public:
-        variable_blackboard& blackboard(){
-            return internalBlackboard;
-        }
+        variable_blackboard& blackboard();
 
-        bool isRunning()const{
-            return running;
-        }
+        bool isRunning()const;
 
-        void pause(){
-            running = false;
-            //Wakes up the script thread if it was waiting
-            conditionVariable.notify_one();
-        }
+        void pause();
 
-        void enterProgramAt(const std::string& nodeName){
-            if(running)
-                throw(new CANNOT_ENTER_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
-            while(callStack.size() > 0)
-                callStack.pop();
-            currentFrame.exitType = call_enterance_point;
-            currentFrame.nextInstruction = 0;
-            currentFrame.index = currentProgram->nodeMappings[nodeName];
+        void enterProgramAt(const std::string& nodeName);
 
-            running = true;
-            launchShutdownVariable.notify_one();
-        }
+        void loadProgram(std::unique_ptr<program>&& newProgram);
 
-        void loadProgram(std::unique_ptr<program>&& newProgram){
-            if(running)
-                throw(new CANNOT_CHANGE_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
-            currentProgram = std::move(newProgram);
-        }
+        Runtime();
 
-        Runtime():
-            running(false),
-            shutdownFlag(false),
-            runtimeResource(std::make_unique<runtime_resources>(*this))
-        {
-            //Send of the script thread
-            std::thread([this](){
-                this->runProgram();
-            }).detach();
-        }
-
-        ~Runtime(){
-            shutdownFlag = true;    //Tell script to shutdown
-            pause();                //Make sure its no longer running so it can register that flag
-            launchShutdownVariable.notify_one();    //Launch it again in case it got stuck somewhere ig
-            std::unique_lock<std::mutex> sync(shutdownMutex);   //now take the mutex that the script holds throughout its lifetime. This proves it has finished
-        }
+        ~Runtime();
 
     private:
         variable_blackboard internalBlackboard;                 //A type agnostic storage for datatypes. Very useful for extentions
@@ -239,29 +175,14 @@ namespace nc{
         std::unique_ptr<runtime_resources> runtimeResource; //Method of exposing functionality to threads without giving them master control
 
 
-        void runProgram(){
-            //This lock will persist until the thread shuts down
-            std::unique_lock<std::mutex> shutdownMutex;
-            //This lock allows this thread to wait while there is nothing to run
-            std::unique_lock<std::mutex> myLock(internalMutex);
-            while(!shutdownFlag){
-                launchShutdownVariable.wait(myLock);
-                while(running){
-                    Operation& op = currentProgram->nodes[currentFrame.index][currentFrame.nextInstruction];
-                    currentFrame.nextInstruction++;
-                    op(runtimeResource);
-                }
-            }
-        }
+        void runProgram();
     };
 
     //This class has access to the full runtime, but only exposes what Operation's will need
     class runtime_resources{
     public:
         friend class Runtime;
-        variable_blackboard& blackboard(){
-            return parent.blackboard();
-        }
+        variable_blackboard& blackboard();
         void call(call_type type, node_index targetIndex);
         void sendToNode(node_index index);
         void requestReturn();
@@ -269,35 +190,18 @@ namespace nc{
         void requestTerminate();
 
         //Probably only used to set up the arguments for a conditional block.
-        std::condition_variable& getConditionVariable()const{
-            return parent.conditionVariable;
-        }
+        std::condition_variable& getConditionVariable()const;
 
         //There is only one condition variable alowed, as this lets the thread certainly be woken up should the script
         //need to be terminated
-        void blockOnCondition(){
-            std::unique_lock l(parent.internalMutex);
-            parent.conditionVariable.wait(l);
-        }
+        void blockOnCondition();
         //As above, but will create another thread which, once the variable is being waited on, shall run the passed in function
         //This lets you inform some primary thread that a script is waiting for it on this variable, while being sure it *is* actually waiting
-        void blockOnCondition(void(*onceLockedFunction)(const std::any&), const std::any& argument){
-            std::unique_lock l(parent.internalMutex);
-            std::thread([](void(*olf)(const std::any&), const std::any& arg, std::mutex& mutex){
-                std::unique_lock ownerExecutionFinishedLock(mutex);
-                ownerExecutionFinishedLock.unlock();    //We know that the script is waiting, with only this thread active from that
-                //Therefore while it is bad for to unlock a unique lock, we can be certain that this is safe, as no other thread should be
-                //trying to access the lock. Furthermore, this is needed, because the passed in lambda may need to get that lock anyway
-                olf(arg);
-            }).detach();
-            parent.conditionVariable.wait(l);
-        }
+        void blockOnCondition(void(*onceLockedFunction)(const std::any&), const std::any& argument);
     private:
         Runtime& parent;
 
-        runtime_resources(Runtime& parent):
-            parent(parent)
-        {}
+        runtime_resources(Runtime& parent);
     };
 
 }

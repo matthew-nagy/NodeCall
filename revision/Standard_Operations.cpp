@@ -9,7 +9,7 @@ namespace op{
     opdef(print){
         argument_list al;
         for(size_t i = 0; i < args.size(); i++){
-            printf("%s", std::any_cast<std::string>(*args[i].getValue(runResource)));
+            printf("%s", std::any_cast<std::string>(*args[i].getValue(runResource)).c_str());
         }
     }
     opdef(println){
@@ -85,7 +85,7 @@ namespace op{
         }, sleepPack);
     }
     opdef(trust_wait){
-        runResource->blockOnCondition([](const std::any&){}, std::make_any<void>());
+        runResource->blockOnCondition([](const std::any&){}, std::make_any<void*>());
     }
 
     //List operations
