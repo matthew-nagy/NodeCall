@@ -102,8 +102,7 @@ namespace nc{
     };
 
     struct additional_library{
-        std::unordered_map<std::string, unsigned> variableKey;
-        std::vector<value> variables;
+        std::unordered_map<std::string, value> variables;
         QuearyTable quearies;
         OperationTable operations;
     };
@@ -111,8 +110,7 @@ namespace nc{
     struct program{
         std::unordered_map<std::string, node_index> nodeMappings;
         std::vector<node> nodes;
-        std::unordered_map<std::string, unsigned> variableKey;
-        std::vector<value> ownedVariables;
+        std::unordered_map<std::string, value> ownedVariables;
     };
 
     //A way of exposing any number of objects to passed in library tables
