@@ -3,9 +3,8 @@
 #define NC_STANDARD_LIBRARY_HPP
 
 #include "Types.hpp"
-#include <exception>
 #include <cmath>
-
+#include <chrono>
 
 #define ERROR_MAKE(NAME) class NAME : public std::logic_error{ public: NAME () : std::logic_error( #NAME ){} }  
 
@@ -28,6 +27,10 @@ struct if_pack{
 struct while_top_pack{
     argument trigger;
     node_index node;
+};
+struct sleep_pack{
+    std::condition_variable* cond;
+    float toWait;  
 };
 
 #define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
@@ -100,6 +103,9 @@ namespace op{
 
     //Assignment
     opdef(assign);
+    
+    //So; what if you want to run a queary without it doing anything?
+    opdef(nop);//   :)
 
     //Internal flow
     opdef(conditional_if);
@@ -108,6 +114,8 @@ namespace op{
     opdef(break_from_conditional);
     opdef(call_node);
     opdef(return_from_node);
+    //A way of "calling" without increasing the call stack
+    opdef(send_node);
 
     //External control flow
     opdef(terminate);
