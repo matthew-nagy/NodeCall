@@ -129,11 +129,34 @@ void Runtime::runProgram(){
 variable_blackboard& runtime_resources::blackboard(){
     return parent.blackboard();
 }
-void runtime_resources::call(call_type type, node_index targetIndex){}
-void runtime_resources::sendToNode(node_index index){}
-void runtime_resources::requestReturn(){}
-void runtime_resources::requestBreak(){}
-void runtime_resources::requestTerminate(){}
+void runtime_resources::call(call_type type, node_index targetIndex){
+    parent.callStack.push(parent.currentFrame);
+    parent.currentFrame.exitType = type;
+    sendToNode(targetIndex);
+}
+void runtime_resources::sendToNode(node_index index){
+    parent.currentFrame.index = index;
+    parent.currentFrame.nextInstruction = 0;
+}
+void runtime_resources::requestReturn(){
+    exitOnType(call_func);
+}
+void runtime_resources::requestBreak(){
+    exitOnType(call_cond_breakable);
+}
+
+void runtime_resources::exitOnType(call_type type){
+    if(parent.currentFrame.exitType != type){
+        while(parent.callStack.top().exitType != type)
+            parent.callStack.pop();
+        parent.callStack.pop();
+    }
+    parent.currentFrame = parent.callStack.top();
+    parent.callStack.pop();
+}
+void runtime_resources::requestTerminate(){
+    parent.pause();
+}
 
 //Probably only used to set up the arguments for a conditional block.
 std::condition_variable& runtime_resources::getConditionVariable()const{

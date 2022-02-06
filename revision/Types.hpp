@@ -202,6 +202,8 @@ namespace nc{
         Runtime& parent;
 
         runtime_resources(Runtime& parent);
+
+        void exitOnType(call_type type);
     };
 
 }
