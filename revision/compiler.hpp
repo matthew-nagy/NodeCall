@@ -48,6 +48,45 @@ namespace nc{   namespace comp{
         token_type type;
     };
 
+    class source{
+    public:
+
+        char peekChar()const{
+            if(currentLineIndex == lines.size())
+                return '\0';
+            return lines[currentLineIndex][currentCharacterIndex];
+        }
+        char getChar(){
+            char currentChar = peekChar();
+            if(currentLineIndex < lines.size()){
+                currentCharacterIndex++;
+                if(currentCharacterIndex == lines[currentLineIndex].size()){
+                    currentCharacterIndex = 0;
+                    currentLineIndex++;
+                }
+            }
+            return currentChar;
+        }
+        void replaceChar(){
+            if(currentCharacterIndex == 0){
+                currentLineIndex--;
+                currentCharacterIndex = lines[currentLineIndex].size() - 1;
+            }
+            else{
+                currentCharacterIndex--;
+            }
+        }
+
+    
+
+    private:
+        std::vector<std::string> lines;         //All lines with program code on it
+        std::vector<unsigned> trueLineNumbers;  //Lines with no code on them are excluded so we keep track here
+
+        size_t currentLineIndex;
+        size_t currentCharacterIndex;
+    };
+
 }}
 
 #endif
