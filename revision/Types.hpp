@@ -49,6 +49,8 @@ namespace nc{
     typedef std::unordered_map<std::string, QuearyFunction> QuearyTable;
     //A mapping of operation names to their functions. Used in the compiler, where multiple tables may be provided
     typedef std::unordered_map<std::string, OperationFunction> OperationTable;
+    //Mapping for variables
+    typedef std::unordered_map<std::string, value> VariableTable;
 
     //Different ways a node can be called
     enum call_type{
@@ -102,7 +104,7 @@ namespace nc{
     };
 
     struct additional_library{
-        std::unordered_map<std::string, value> variables;
+        VariableTable variables;
         QuearyTable quearies;
         OperationTable operations;
     };
@@ -110,7 +112,7 @@ namespace nc{
     struct program{
         std::unordered_map<std::string, node_index> nodeMappings;
         std::vector<node> nodes;
-        std::unordered_map<std::string, value> ownedVariables;
+        VariableTable ownedVariables;
     };
 
     //A way of exposing any number of objects to passed in library tables
