@@ -1,12 +1,15 @@
 #pragma once
-#ifndef COMPILER_HPP
-#define COMPILER_HPP
+#ifndef NC_TOKENISER_HPP
+#define NC_TOKENISER_HPP
 #include "Standard_Library.hpp"
 
 namespace nc{   namespace comp{
 
     ERROR_MAKE(ILLIGAL_NUMERIC);
     ERROR_MAKE(ILLIGAL_STRING);
+    ERROR_MAKE(UNKNOWN_OPERATION_REQUESTED);
+    ERROR_MAKE(UNKNOWN_QUEARY_REQUESTED);
+    ERROR_MAKE(UNKNOWN_VARIABLE_REQUESTED);
 
 
     enum token_type{
@@ -48,6 +51,40 @@ namespace nc{   namespace comp{
         void requestNewVariable(const std::string& varName) {
             newVariables[varName] = std::make_shared<std::any>();
         }
+
+        void addLibrary(const std::shared_ptr<additional_library>& lib) {
+            libraries.emplace_back(lib);
+        }
+        void addVariables(const std::initializer_list <std::pair <std::string, value>>& initilizer) {
+            for (auto& v : initilizer)
+                newVariables.emplace(v);
+        }
+        void addVariable(const std::string& name, const value& val) {
+            newVariables.emplace(name, val);
+        }
+
+        OperationFunction getOpereration(const std::string& s) {
+            for (auto& l : libraries)
+                if (l->operations.count(s) > 0)
+                    return l->operations.find(s)->second;
+            throw(new UNKNOWN_OPERATION_REQUESTED);
+        }
+        QuearyFunction getQueary(const std::string& s) {
+            for (auto& l : libraries)
+                if (l->operations.count(s) > 0)
+                    return l->quearies.find(s)->second;
+            throw(new UNKNOWN_OPERATION_REQUESTED);
+        }
+        value getVariable(const std::string& s) {
+            for (auto& l : libraries)
+                if (l->operations.count(s) > 0)
+                    return l->variables.find(s)->second;
+            if (newVariables.count(s) > 0)
+                return newVariables.find(s)->second;
+            throw(new UNKNOWN_OPERATION_REQUESTED);
+        }
+        
+        compilation_environment() = default;
     private:
         std::vector<std::shared_ptr<additional_library>> libraries;
         VariableTable newVariables;
@@ -71,21 +108,22 @@ namespace nc{   namespace comp{
         {"&&", boolean_and}, {"||", boolean_or}
     };
 
-    enum lexer_state{
-        looking_for_node,   //Looking for the name of a node to parse
-        in_node,            //In a node, looking for the next token to lex
-        on_numeric, on_string,  //Going through integers, floating points, and strings
-        on_word    //functions, quearies, variables, true and false
-    };
-
     struct token{
         std::string representation;
         unsigned lineNumber;
         token_type type;
+
+        token() = default;
+
+        token(const std::string& s, unsigned lineNum, token_type type):
+            representation(s),
+            lineNumber(lineNum),
+            type(type)
+        {}
     };
 
     bool isNumericChar(char c) {
-        return (c >= '0' && c <= '9') || c == '-' || c == 'x';
+        return (c >= '0' && c <= '9') || c == '-' || c == 'x' || c == '.';
     }
     bool isStringChar(char c) {
         return c == '"' || c == '\'';
@@ -101,7 +139,7 @@ namespace nc{   namespace comp{
     }
 
     bool isSpecialTerminatingChar(char c) {
-        return isWhitespace(c) || isComment(c) || isSeperator(c);
+        return isWhitespace(c) || isComment(c) || isSeperator(c) || c == '\0' || _single_char_tokens.count(c) > 0;
     }
 
     token_type getNumericType(const std::string& str) {
@@ -120,13 +158,13 @@ namespace nc{   namespace comp{
     class source{
     public:
 
-        char peekChar()const{
+        char peek()const{
             if(currentLineIndex == lines.size())
                 return '\0';
             return lines[currentLineIndex][currentCharacterIndex];
         }
-        char getChar(){
-            char currentChar = peekChar();
+        char get(){
+            char currentChar = peek();
             if(currentLineIndex < lines.size()){
                 currentCharacterIndex++;
                 if(currentCharacterIndex == lines[currentLineIndex].size()){
@@ -136,7 +174,7 @@ namespace nc{   namespace comp{
             }
             return currentChar;
         }
-        void replaceChar(){
+        void replace(){
             if(currentCharacterIndex == 0){
                 currentLineIndex--;
                 currentCharacterIndex = lines[currentLineIndex].size() - 1;
@@ -147,16 +185,33 @@ namespace nc{   namespace comp{
         }
 
         void skipWhitespace() {
-            while (isWhitespace(peekChar()))
-                getChar();
+            while (isWhitespace(peek()))
+                get();
         }
         void skipComment() {
-            if (isComment(peekChar()))
+            if (isComment(peek())) {
                 currentLineIndex += 1;
+                currentCharacterIndex = 0;
+            }
         }
 
         size_t getLineNumber()const {
+            if (currentLineIndex >= trueLineNumbers.size())
+                return -1;
             return trueLineNumbers[currentLineIndex];
+        }
+
+        source(const std::vector<std::string>& code) {
+            for (size_t i = 0; i < code.size(); i++) {
+
+                if (lineValid(code[i])) {
+                    lines.emplace_back(getStrippedLine(code[i]));
+                    trueLineNumbers.emplace_back(i);
+                }
+
+            }
+
+            currentCharacterIndex = currentLineIndex = 0;
         }
 
     private:
@@ -165,20 +220,28 @@ namespace nc{   namespace comp{
 
         size_t currentLineIndex;
         size_t currentCharacterIndex;
+
+        bool lineValid(const std::string& line){
+            return true;
+        }
+
+        std::string getStrippedLine(const std::string& line) {
+            return line;
+        }
     };
 
     token getNumericToken(source& sourceCode) {
         token toret;
         toret.lineNumber = sourceCode.getLineNumber();
-        while (isNumericChar(sourceCode.peekChar()))
-            toret.representation += sourceCode.getChar();
+        while (isNumericChar(sourceCode.peek()))
+            toret.representation += sourceCode.get();
 
         toret.type = getNumericType(toret.representation);
 
         return toret;
     }
     token getStringToken(source& sourceCode){
-        char c = sourceCode.getChar();
+        char c = sourceCode.get();
         if (c != '"')
             throw(new ILLIGAL_STRING);
         
@@ -186,28 +249,31 @@ namespace nc{   namespace comp{
         toret.type = string;
         toret.lineNumber = sourceCode.getLineNumber();
         
-        c = sourceCode.getChar();
+        c = sourceCode.get();
         do {
             toret.representation += c;
-            c = sourceCode.getChar();
+            c = sourceCode.get();
         } while (!isStringChar(c));
 
         return toret;
     }
-    token getSpecialToken(source& sourceCode, compilation_environment& compEnv){
+    token getSpecialToken(source& sourceCode, compilation_environment& compEnv) {
         token toret;
-        toret.type = defined_token;
         toret.lineNumber = sourceCode.getLineNumber();
 
         //Get the entirety of the token
-        char c = sourceCode.getChar();
+        char c = sourceCode.get();
         do {
             toret.representation += c;
-            c = sourceCode.getChar();
+            c = sourceCode.get();
         } while (!isSpecialTerminatingChar(c));
+        sourceCode.replace();
 
         //Figure out what type of token it was
-        if (compEnv.isOperation(toret.representation)) {
+        if (toret.representation == "true" || toret.representation == "false") {
+            toret.type = boolean;
+        }
+        else if (compEnv.isOperation(toret.representation)) {
             toret.type = operation;
         }
         else if (compEnv.isQueary(toret.representation)) {
@@ -224,22 +290,23 @@ namespace nc{   namespace comp{
     }
 
     token getTokenFromSource(source& sourceCode, compilation_environment& compEnv) {
-        char c1 = sourceCode.getChar();
+        unsigned lineNum = sourceCode.getLineNumber();
+        char c1 = sourceCode.get();
         if (_single_char_tokens.count(c1) > 0) {
-            char c2 = sourceCode.peekChar();
-            std::string compString = [c2, c2'\0'];
+            char c2 = sourceCode.peek();
+            std::string compString = { c2, c2, '\0' };
             if (_double_char_tokens.count(compString) > 0)
-                return _double_char_tokens[compString];
+                return token(compString, lineNum, _double_char_tokens.find(compString)->second);
             else
-                return _single_char_tokens[c1];
+                return token(std::string() + c1, lineNum, _single_char_tokens.find(c1)->second);
         }
-        sourceCode.replaceChar();
+        sourceCode.replace();
 
         if (isNumericChar(c1))
             return getNumericToken(sourceCode);
         else if (isStringChar(c1))
             return getStringToken(sourceCode);
-        return getSpecialToken(sourceCode);
+        return getSpecialToken(sourceCode, compEnv);
     }
 
     std::vector<token> tokeniseSource(source& sourceCode, compilation_environment& compEnv) {
