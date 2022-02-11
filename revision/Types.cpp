@@ -40,15 +40,27 @@ value Queary::operator()(unique_run_resource& environment){
     return func(arguments, environment);
 }
 
-Queary::Queary(QuearyFunction func, argument_list&& arguments):
+Queary::Queary(QuearyFunction func, argument_list&& arguments, unsigned lineNumber):
     func(func),
     arguments(std::move(arguments))
-{}
+{
+#ifdef _DEBUG
+    lineNum = lineNumber;
+#endif
+}
 
 
 
 void Operation::operator()(unique_run_resource& environment){
     func(arguments, environment);
+}
+Operation::Operation(OperationFunction func, argument_list&& arguments, unsigned lineNumber):
+    func(func),
+    arguments(std::move(arguments))
+{
+#ifdef _DEBUG
+    lineNum = lineNumber;
+#endif
 }
 
 

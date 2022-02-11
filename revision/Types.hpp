@@ -23,7 +23,7 @@
 #define ERROR_MAKE(NAME) class NAME : public std::logic_error{ public: NAME () : std::logic_error( #NAME ){} }  
 namespace nc{
     struct Queary;
-    class Operation;
+    struct Operation;
     class argument;
     class runtime_resources;
     class Runtime;
@@ -90,7 +90,7 @@ namespace nc{
         #endif
         value operator()(unique_run_resource& environment);
 
-        Queary(QuearyFunction func, argument_list&& arguments);
+        Queary(QuearyFunction func, argument_list&& arguments, unsigned lineNum = 0);
     };
 
     struct Operation{
@@ -100,7 +100,10 @@ namespace nc{
         unsigned lineNum;
         #endif
 
+
         void operator()(unique_run_resource& environment);
+        
+        Operation(OperationFunction func, argument_list&& arguments, unsigned lineNum = 0);
     };
 
     struct additional_library{
