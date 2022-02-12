@@ -275,6 +275,27 @@ namespace nc{   namespace comp{
         
         c = sourceCode.get();
         do {
+            if (c == '\\') {
+                char replacement = 'n';
+                switch (sourceCode.peek()) {
+                case '\\':
+                    replacement = '\\';
+                    break;
+                case 'n':
+                    replacement = '\n';
+                    break;
+                case 't':
+                    replacement = '\t';
+                    break;
+                case '"':
+                    replacement = '"';
+                    break;
+                }
+                if (replacement != 'n') {
+                    c = replacement;
+                    sourceCode.get();
+                }
+            }
             toret.representation += c;
             c = sourceCode.get();
         } while (!isStringChar(c));

@@ -7,7 +7,7 @@ std::vector<std::string> sc = {
     "someNode{",
     "assign(num, 0.23);  #Some comment?",
     "lengthSqr = ((1.2 * 1.2) + (1.4 * 1.4));"
-    "print(num, 12, \"thingy\");",
+    "print(num, 12, \"thingy\\ttime\");",
     "}"
 };
 
