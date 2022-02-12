@@ -30,7 +30,7 @@ namespace op{
 
     //Internal flow
     opdef(conditional_if){
-        if_pack& ifs = *std::any_cast<std::shared_ptr<if_pack>>(args[0].getValue(runResource)).get();
+        if_pack& ifs = * (std::any_cast<std::shared_ptr<if_pack>>(args[0].getValue(runResource)).get());
         for(size_t i = 0; i < ifs.triggers.size(); i++){
             if(std::any_cast<bool>(*ifs.triggers[i].getValue(runResource))){
                 runResource->call(call_cond_definate, ifs.resultantNodes[i]);
@@ -109,7 +109,8 @@ namespace op{
 const OperationTable _standard_operations = {
     {"print", op::print}, {"println", op::println},
     {"assign", op::assign}, {"nop", op::nop},
-    {"if", op::conditional_if}, {"while", op::while_loop}, {"do", op::do_while_loop}, {"call", op::call_node}, {"send_to", op::send_node},
+    {"if", op::conditional_if}, {"elif", op::nop}, {"else", op::nop},
+    {"while", op::while_loop}, {"do", op::do_while_loop}, {"call", op::call_node}, {"send_to", op::send_node},
     {"break", op::break_from_conditional}, {"return", op::return_from_node},
     {"end", op::terminate}, {"sleep_for", op::sleep_for}, {"trust_wait", op::trust_wait},
     {"list_clear", op::list_clear}, {"list_push", op::list_push}, {"list_push_back", op::list_push_back}

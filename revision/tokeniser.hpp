@@ -2,6 +2,7 @@
 #ifndef NC_TOKENISER_HPP
 #define NC_TOKENISER_HPP
 #include "Standard_Library.hpp"
+#include <unordered_set>
 
 namespace nc{   namespace comp{
 
@@ -23,6 +24,26 @@ namespace nc{   namespace comp{
         boolean_equality, boolean_inequality, boolean_less, boolean_greater, boolean_lesseq, boolean_greatereq, //Boolean comparisons
         boolean_and, boolean_or,
         null_token   //tee hee
+    };
+
+    const std::unordered_set<token_type> _inlineable_queary_type = {
+        queary, addition, subtraction, multiplication, division, modulo, lsl, lsr, logical_and, logical_or, logical_not,
+        logical_xor, boolean_equality, boolean_inequality, boolean_less, boolean_greater, boolean_lesseq, boolean_greatereq,
+        boolean_and, boolean_or
+    };
+
+    const std::unordered_map<token_type, std::string> tokenRep = {
+        {open_node, "open node"}, {close_node, "close node"},
+        {open_bracket, "open bracket"}, {close_bracket, "close bracket"},
+        {argument_seperator, "argument seperator"}, {line_terminator, "line terminator"},
+        {integer, "int"}, {floating_point, "float"}, {string, "string"}, {boolean, "bool"},
+        {operation, "operation"}, {queary, "queary"}, {variable, "variable"},
+        {assignment, "assignment"}, {addition, "addition"}, {subtraction, "subtraction"}, {multiplication, "mult"}, {division, "div"}, {modulo, "mod"},
+        {lsl, "shift left"}, {lsr, "shift right"}, {logical_and, "and"}, {logical_or, "or"}, {logical_not, "not"}, {logical_xor, "xor"},
+        {boolean_equality, "equals"}, {boolean_inequality, "not equals"}, {boolean_less, "less"}, {boolean_greater, "greater"},
+        {boolean_lesseq, "less or equal"}, {boolean_greatereq, "greater or equal"},
+        {boolean_and, "and"}, {boolean_or, "or"},
+        {null_token, "null"}
     };
 
     class compilation_environment {
@@ -49,6 +70,7 @@ namespace nc{   namespace comp{
         }
 
         void requestNewVariable(const std::string& varName) {
+            printf("Creating new variable %s\n", varName.c_str());
             newVariables[varName] = std::make_shared<std::any>();
         }
 
@@ -71,17 +93,19 @@ namespace nc{   namespace comp{
         }
         QuearyFunction getQueary(const std::string& s) {
             for (auto& l : libraries)
-                if (l->operations.count(s) > 0)
+                if (l->quearies.count(s) > 0)
                     return l->quearies.find(s)->second;
-            throw(new UNKNOWN_OPERATION_REQUESTED);
+            printf("%s\n", s.c_str());
+            throw(new UNKNOWN_QUEARY_REQUESTED);
         }
         value getVariable(const std::string& s) {
             for (auto& l : libraries)
-                if (l->operations.count(s) > 0)
+                if (l->variables.count(s) > 0)
                     return l->variables.find(s)->second;
             if (newVariables.count(s) > 0)
                 return newVariables.find(s)->second;
-            throw(new UNKNOWN_OPERATION_REQUESTED);
+            printf("%s\n", s.c_str());
+            throw(new UNKNOWN_VARIABLE_REQUESTED);
         }
         
         compilation_environment() = default;

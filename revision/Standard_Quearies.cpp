@@ -371,9 +371,17 @@ namespace q{
     //The names of all the quaries, and their function pointers
     const QuearyTable _standard_quearies = {
         {"add", q::add}, {"sub", q::sub}, {"mul", q::mul}, {"div", q::div}, {"mod", q::mod}, {"sqrt", q::square_root},
-        {"lshift", q::lshift}, {"rshift", q::rshift}, {"&", q::land}, {"|", q::lor}, {"!", q::lnot}, {"^", q::lxor},
-        {"and", q::band}, {"or", q::bor}, {"equals", q::beq}, {"not_equals", q::bneq}, 
+        {"+", q::add}, {"-", q::sub}, {"*", q::mul}, {"/", q::div}, {"%", q::mod},
+
+        {"lshift", q::lshift}, {"rshift", q::rshift},
+        {"<<", q::lshift}, {">>", q::rshift}, {"&", q::land}, {"|", q::lor}, {"!", q::lnot}, {"^", q::lxor},
+
+        {"and", q::band}, {"or", q::bor}, {"equals", q::beq}, {"not_equals", q::bneq},
+        {"&&", q::band}, {"||", q::bor}, {"==", q::beq}, {"!=", q::bneq},
+
         {"less", q::bless}, {"greater", q::bgreater}, {"less_eq", q::blesseq}, {"greater_eq", q::bgreatereq},
+        {"<", q::bless}, {">", q::bgreater}, {"<=", q::blesseq}, {">=", q::bgreatereq},
+
         {"list_create", q::list_create}, {"list_size", q::list_size}, {"list_index", q::list_index}, {"list_pop", q::list_pop},
         {"list_pop_front", q::list_pop_front}, {"list_front", q::list_front}, {"list_tail", q::list_tail},
         {"input", q::input},
