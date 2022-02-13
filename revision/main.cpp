@@ -5,9 +5,10 @@
 
 std::vector<std::string> sc = {
     "someNode{",
-    "assign(num, 0.23);  #Some comment?",
-    "lengthSqr = ((1.2 * 1.2) + (1.4 * 1.4));"
-    "print(num, 12, \"thingy\\ttime\");",
+    "assign(num, 2.0);  #Some comment?",
+    "lengthSqr = ((num * num) + (1.0 * 1.0));"
+    "print(itos(num), \"thingy\\ttime\");",
+    "end();",
     "}"
 };
 
@@ -26,5 +27,12 @@ int main(){
         printf("\t\t%s\t%s\n", t[i].representation.c_str(), nc::comp::tokenRep.find(t[i].type)->second.c_str());
         p.giveToken(t[i]);
     }
+
+    std::unique_ptr<nc::program> program = p.getProgram();
+    nc::Runtime runtime;
+    runtime.loadProgram(std::move(program));
+    runtime.enterProgramAt("someNode");
+    while (runtime.isRunning()) {}
+
     return 0;
 }

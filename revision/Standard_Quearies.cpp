@@ -388,7 +388,8 @@ namespace q{
         {"typeof", q::getType},
         {"foti", q::ftoi}, {"stoi", q::stoi}, {"btoi", q::btoi},
         {"itof", q::itof}, {"btof", q::btof}, {"stof", q::stof},
-        {"itob", q::itob}, {"ftob", q::ftob}, {"stob", q::stob}, {"ttos", q::ttos}
+        {"itob", q::itob}, {"ftob", q::ftob}, {"stob", q::stob},
+        {"itos", q::itos}, {"ftos", q::ftos}, {"btos", q::btos}, {"ttos", q::ttos}
     };
 
 }}

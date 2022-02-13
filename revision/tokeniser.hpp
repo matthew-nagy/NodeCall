@@ -74,6 +74,10 @@ namespace nc{   namespace comp{
             newVariables[varName] = std::make_shared<std::any>();
         }
 
+        VariableTable getNewVariables()const {
+            return newVariables;
+        }
+
         void addLibrary(const std::shared_ptr<additional_library>& lib) {
             libraries.emplace_back(lib);
         }

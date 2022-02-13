@@ -105,10 +105,12 @@ Runtime::Runtime():
     shutdownFlag(false),
     runtimeResource(new runtime_resources(*this))
 {
+    std::unique_lock<std::mutex> launchLock(internalMutex);
     //Send of the script thread
     std::thread([this](){
         this->runProgram();
     }).detach();
+    conditionVariable.wait(launchLock);
 }
 
 Runtime::~Runtime(){
@@ -121,6 +123,7 @@ Runtime::~Runtime(){
 void Runtime::runProgram(){
     //This lock will persist until the thread shuts down
     std::unique_lock<std::mutex> shutdownMutex;
+    conditionVariable.notify_one();
     //This lock allows this thread to wait while there is nothing to run
     std::unique_lock<std::mutex> myLock(internalMutex);
     while(!shutdownFlag){

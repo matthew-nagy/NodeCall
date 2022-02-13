@@ -282,19 +282,6 @@ namespace nc {	namespace comp {
 				break;
 			case look_for_argument:
 				switch (t.type) {
-				case close_bracket:
-					//We aren't pushing to these arguments anymore
-					argNodes.pop();
-					if (quearyDepth == 0) {
-						currentState = closing_operation;
-					}
-					else {
-						quearyDepth -= 1;
-						//Return up to either the next queary or the operation
-						currentCallNode.pop();
-						currentState = looking_for_seperator;
-					}
-					break;
 				case variable:
 					argNodes.top()->emplace_back(getVariableArgNode(t, *compEnv));
 					currentState = looking_for_seperator;
@@ -302,10 +289,14 @@ namespace nc {	namespace comp {
 				case queary:
 					argNodes.top()->emplace_back();
 					argNodes.top()->back().val = call_node();
-					currentCallNode.push(&std::get<call_node>(argNodes.top()->back().val));
+					currentCallNode.emplace(&std::get<call_node>(argNodes.top()->back().val));
 					currentCallNode.top()->func = compEnv->getQueary(t.representation);
+					argNodes.emplace(&currentCallNode.top()->arguments);
 					currentState = opening_queary;
 					quearyDepth += 1;
+					break;
+				case close_bracket://Let the seperator handle this
+					exitFunction();
 					break;
 				default:
 					argNodes.top()->emplace_back(getConstantArgNode(t, *compEnv));
@@ -319,7 +310,8 @@ namespace nc {	namespace comp {
 				break;
 			case looking_for_seperator:
 				if (t.type == close_bracket) {
-					currentState = closing_operation;
+					//We aren't pushing to these arguments anymore
+					exitFunction();
 					break;
 				}
 				if (t.type != argument_seperator)
@@ -410,6 +402,20 @@ namespace nc {	namespace comp {
 			printf("%s\n", statePrintValues.find(currentState)->second.c_str());
 		}
 
+		std::unique_ptr<program> getProgram() {
+			std::unique_ptr<program> p = std::make_unique<program>();
+			p->nodeMappings = nodeMappings;
+			p->ownedVariables = compEnv->getNewVariables();
+			for (size_t i = 0; i < callNodes.size(); i++) {
+				p->nodes.emplace_back();
+				for (size_t j = 0; j < callNodes[i].size(); j++) {
+					callNodes[i][j].getOperationFrom(p->nodes.back());
+				}
+			}
+
+			return p;
+		}
+
 		parser(compilation_environment* compEnv):
 			compEnv(compEnv)
 		{}
@@ -455,6 +461,19 @@ namespace nc {	namespace comp {
 			bracketsWereOnLeft.emplace(onLeft);
 			currentState = left_arg;
 			printf("Open bracket (%u)\n", bracketDepth);
+		}
+
+		void exitFunction() {
+			argNodes.pop();
+			if (quearyDepth == 0) {
+				currentState = closing_operation;
+			}
+			else {
+				quearyDepth -= 1;
+				//Return up to either the next queary or the operation
+				currentCallNode.pop();
+				currentState = looking_for_seperator;
+			}
 		}
 	};
 	/*look_for_node, opening_node,
