@@ -22,9 +22,11 @@ argument& argument::operator=(Queary* queary){
 }
 
 argument::argument(std::any* constant):
-    assignedValue(std::make_shared<std::any>(constant)),
     innerQueary(nullptr)
-{}
+{
+    printf("NANI\n");
+    assignedValue.reset(constant);
+}
 argument::argument(const value& variable):
     assignedValue(variable),
     innerQueary(nullptr)
