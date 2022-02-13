@@ -91,8 +91,11 @@ namespace nc {	namespace comp {
 	//A way of storing a function token's value, and its arguments
 	struct call_node {
 		std::variant<OperationFunction, QuearyFunction> func;
+		token functionToken;
 		std::vector<argument_node> arguments;
 		unsigned lineNum = 0;
+
+		void printContents(const std::string& priorPrint);
 
 		Queary* getQueary()const;
 		void getOperationFrom(node& commands);
@@ -101,6 +104,16 @@ namespace nc {	namespace comp {
 	//A way of storing an argument, be it constant, variable or a queary (via a call_node)
 	struct argument_node {
 		std::variant<value, std::any, call_node> val;
+		token valueToken;
+
+		void printContents(const std::string& priorPrint) {
+			if (std::holds_alternative<call_node>(val)) {
+				call_node& cn = std::get<call_node>(val);
+				cn.printContents(priorPrint);
+			}
+			else
+				printf("%s'%s'\n", priorPrint.c_str(), valueToken.representation.c_str());
+		}
 
 		argument_node& operator=(const value& v) {
 			val = v;
@@ -134,6 +147,11 @@ namespace nc {	namespace comp {
 		for (auto& an : arguments)
 			argList.emplace_back(an.getArgument());
 		return new Queary(std::get<QuearyFunction>(func), std::move(argList), lineNum);
+	}
+	void call_node::printContents(const std::string& priorPrint) {
+		printf("%s'%s'\n", priorPrint.c_str(), functionToken.representation.c_str());
+		for (size_t i = 0; i < arguments.size(); i++)
+			arguments[i].printContents(priorPrint + "\t");
 	}
 	void call_node::getOperationFrom(node& commands) {
 		if (!std::holds_alternative<OperationFunction>(func))
@@ -189,6 +207,7 @@ namespace nc {	namespace comp {
 	argument_node getVariableArgNode(const token& t, compilation_environment& env) {
 		argument_node argNode;
 		argNode = env.getVariable(t.representation);
+		argNode.valueToken = t;
 		return argNode;
 	}
 	argument_node getConstantArgNode(const token& t, compilation_environment& env) {
@@ -207,6 +226,7 @@ namespace nc {	namespace comp {
 		else
 			throw(new INVALID_TOKEN_TYPE_FOR_ARG);
 
+		argNode.valueToken = t;
 		return argNode;
 	}
 
@@ -257,16 +277,20 @@ namespace nc {	namespace comp {
 
 					//function call
 					if (t.type == operation) {
+						currentCallNode.top()->functionToken = t;
 						currentCallNode.top()->func = compEnv->getOpereration(t.representation);
 						currentState = opening_operation;
 					}
 					//Assignment of some sort
 					else if (t.type == variable) {
 						currentCallNode.top()->func = stlib::op::assign;
-						currentCallNode.top()->arguments.emplace_back();
-						currentCallNode.top()->arguments.back() = compEnv->getVariable(t.representation);
+						printProgram();
 						argNodes.emplace(&currentCallNode.top()->arguments);
+						argNodes.top()->emplace_back();
+						argNodes.top()->back() = compEnv->getVariable(t.representation);
+						argNodes.top()->back().valueToken = t;
 						currentState = starting_assignment;
+						printProgram();
 					}
 					else {
 						throw(new EXPECTED_OPERATION);
@@ -277,7 +301,6 @@ namespace nc {	namespace comp {
 				if (t.type != open_bracket)
 					throw(new EXPECTED_OPEN_BRACKET);
 				currentState = look_for_argument;
-				currentCallNode.top()->arguments.emplace_back();
 				argNodes.push(&currentCallNode.top()->arguments);
 				break;
 			case look_for_argument:
@@ -291,6 +314,7 @@ namespace nc {	namespace comp {
 					argNodes.top()->back().val = call_node();
 					currentCallNode.emplace(&std::get<call_node>(argNodes.top()->back().val));
 					currentCallNode.top()->func = compEnv->getQueary(t.representation);
+					currentCallNode.top()->functionToken = t;
 					argNodes.emplace(&currentCallNode.top()->arguments);
 					currentState = opening_queary;
 					quearyDepth += 1;
@@ -322,6 +346,7 @@ namespace nc {	namespace comp {
 				if (t.type != assignment)
 					throw(new EXPECTED_ASSIGNMENT_OPERATOR);
 				currentState = assignment_r_arg;
+				currentCallNode.top()->functionToken = t;
 				break;
 			case assignment_r_arg:
 				if (t.type == open_bracket) {
@@ -329,8 +354,10 @@ namespace nc {	namespace comp {
 				}
 				else {
 					argNodes.top()->emplace_back();
-					if (t.type == variable)
+					if (t.type == variable) {
 						argNodes.top()->back() = compEnv->getVariable(t.representation);
+						argNodes.top()->back().valueToken = t;
+					}
 					else
 						argNodes.top()->back() = getConstantArgNode(t, *compEnv);
 					currentState = possible_end_assignment_or_queary;
@@ -342,8 +369,10 @@ namespace nc {	namespace comp {
 				}
 				else {
 					argNodes.top()->emplace_back();
-					if (t.type == variable)
+					if (t.type == variable) {
 						argNodes.top()->back() = compEnv->getVariable(t.representation);
+						argNodes.top()->back().valueToken = t;
+					}
 					else
 						argNodes.top()->back() = getConstantArgNode(t, *compEnv);
 					currentState = middleOperator;
@@ -360,6 +389,7 @@ namespace nc {	namespace comp {
 				if (_inlineable_queary_type.count(t.type) == 0)
 					throw(new EXPECTED_QUEARY);
 				currentCallNode.top()->func = compEnv->getQueary(t.representation);
+				currentCallNode.top()->functionToken = t;
 				currentState = right_arg;
 				break;
 			case right_arg:
@@ -368,8 +398,10 @@ namespace nc {	namespace comp {
 				}
 				else{
 					argNodes.top()->emplace_back();
-					if (t.type == variable)
+					if (t.type == variable) {
 						argNodes.top()->back() = compEnv->getVariable(t.representation);
+						argNodes.top()->back().valueToken = t;
+					}
 					else
 						argNodes.top()->back() = getConstantArgNode(t, *compEnv);
 					currentState = closing_operation;
@@ -400,6 +432,14 @@ namespace nc {	namespace comp {
 
 		void printState() {
 			printf("%s\n", statePrintValues.find(currentState)->second.c_str());
+		}
+
+		void printProgram() {
+			for (size_t i = 0; i < callNodes.size(); i++) {
+				printf(">");
+				for (size_t j = 0; j < callNodes[i].size(); j++)
+					callNodes[i][j].printContents("\t");
+			}
 		}
 
 		std::unique_ptr<program> getProgram() {
