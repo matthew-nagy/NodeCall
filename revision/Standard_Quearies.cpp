@@ -107,6 +107,7 @@ namespace q{
                 tot*=std::any_cast<float>(*args[i].getValue(runResource).get());
             return makeVal<float>(tot);
         }
+        printf("%s\n", arg1->type().name());
         throw(new INVALID_ARGUMENT_TYPE);
     }
     qdef(mod){

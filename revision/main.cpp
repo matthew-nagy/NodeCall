@@ -6,9 +6,13 @@
 std::vector<std::string> sc = {
     "someNode{",
     "assign(num, 2.0);  #Some comment?",
-    "lengthSqr = ((num * num) + (1.0 * 1.0));"
-    "print(itos(num), \"thingy\\ttime\");",
+    "lengthSqr = ((1.0 * 1.0) + (num * num));"
+    "#print(itos(lengthSqr), \"thingy\\ttime\");",
+    "print(\"ham salad!\", \"\\n\");",
     "end();",
+    "}",
+    "nextNode{",
+    "println(\"This thing sure can parse!\");",
     "}"
 };
 
@@ -28,6 +32,7 @@ int main(){
         p.giveToken(t[i]);
     }
 
+    p.printProgram();
     std::unique_ptr<nc::program> program = p.getProgram();
     nc::Runtime runtime;
     runtime.loadProgram(std::move(program));

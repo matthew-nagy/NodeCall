@@ -20,6 +20,7 @@ namespace op{
     //Assignment
     opdef(assign){
         (*args[0].getValue(runResource)) = (*args[1].getValue(runResource));
+        printf("Assignment has finished\n");
     }
 
     //Just run quearies
