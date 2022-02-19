@@ -20,7 +20,6 @@ namespace op{
     //Assignment
     opdef(assign){
         (*args[0].getValue(runResource)) = (*args[1].getValue(runResource));
-        printf("Assignment has finished\n");
     }
 
     //Just run quearies
@@ -30,10 +29,18 @@ namespace op{
     }
 
     //Internal flow
-    opdef(conditional_if){
-        if_pack& ifs = * (std::any_cast<std::shared_ptr<if_pack>>(args[0].getValue(runResource)).get());
+    opdef(conditional_if) {
+        auto& a = args[0];
+        auto val = a.getValue(runResource);
+
+        if_pack& ifs = * (std::any_cast<std::shared_ptr<if_pack>>(*val));
         for(size_t i = 0; i < ifs.triggers.size(); i++){
-            if(std::any_cast<bool>(*ifs.triggers[i].getValue(runResource))){
+            auto& triggerArg = ifs.triggers[i];
+            auto triggerValue = triggerArg.getValue(runResource);
+            if (triggerValue->type() != typeid(bool))
+                throw(-1);
+            if(std::any_cast<bool>(*triggerValue)){
+                printf(">> Condition %zu is true\n", i);
                 runResource->call(call_cond_definate, ifs.resultantNodes[i]);
                 return;
             }
@@ -42,6 +49,9 @@ namespace op{
             runResource->call(call_cond_definate, ifs.elseNode);
         }
     }
+    //Nothing, used for the parser later
+    opdef(conditional_elif){}
+    opdef(conditional_else){}
     //The bottom of the resulting node should have a special if pack at the bottom to send it back to the same node
     opdef(while_loop){
         while_top_pack& wtp = *std::any_cast<std::shared_ptr<while_top_pack>>(*args[0].getValue(runResource)).get();
@@ -49,11 +59,11 @@ namespace op{
             runResource->call(call_cond_breakable, wtp.node);
         }
     }
-    opdef(do_while_loop){
-        runResource->call(call_cond_breakable, std::any_cast<node_index>(*args[0].getValue(runResource)));
-    }
-    opdef(break_from_conditional){
+    opdef(break_from_while){
         runResource->requestBreak();
+    }
+    opdef(break_from_if) {
+        runResource->endIf();
     }
     opdef(call_node){
         runResource->call(call_func, std::any_cast<node_index>(*args[0].getValue(runResource)));
@@ -110,9 +120,9 @@ namespace op{
 const OperationTable _standard_operations = {
     {"print", op::print}, {"println", op::println},
     {"assign", op::assign}, {"nop", op::nop},
-    {"if", op::conditional_if}, {"elif", op::nop}, {"else", op::nop},
-    {"while", op::while_loop}, {"do", op::do_while_loop}, {"call", op::call_node}, {"send_to", op::send_node},
-    {"break", op::break_from_conditional}, {"return", op::return_from_node},
+    {"if", op::conditional_if}, {"elif", op::conditional_elif}, {"else", op::conditional_else},
+    {"while", op::while_loop}, {"call", op::call_node}, {"send_to", op::send_node},
+    {"break", op::break_from_while}, {"return", op::return_from_node},
     {"end", op::terminate}, {"sleep_for", op::sleep_for}, {"trust_wait", op::trust_wait},
     {"list_clear", op::list_clear}, {"list_push", op::list_push}, {"list_push_back", op::list_push_back}
 };

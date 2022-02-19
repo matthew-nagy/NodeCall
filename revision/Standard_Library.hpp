@@ -109,9 +109,11 @@ namespace op{
 
     //Internal flow
     opdef(conditional_if);
+    opdef(conditional_elif);
+    opdef(conditional_else);
     opdef(while_loop);
-    opdef(do_while_loop);
-    opdef(break_from_conditional);
+    opdef(break_from_while);
+    opdef(break_from_if);
     opdef(call_node);
     opdef(return_from_node);
     //A way of "calling" without increasing the call stack

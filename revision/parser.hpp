@@ -95,18 +95,18 @@ namespace nc {	namespace comp {
 		std::vector<argument_node> arguments;
 		unsigned lineNum = 0;
 
-		void printContents(const std::string& priorPrint);
+		void printContents(const std::string& priorPrint)const;
 
 		Queary* getQueary()const;
-		void getOperationFrom(node& commands);
+		void getOperationFrom(node& commands)const;
 	};
 
 	//A way of storing an argument, be it constant, variable or a queary (via a call_node)
 	struct argument_node {
-		std::variant<value, std::any, call_node> val;
+		mutable std::variant<value, std::any, call_node> val;
 		token valueToken;
 
-		void printContents(const std::string& priorPrint) {
+		void printContents(const std::string& priorPrint)const {
 			if (std::holds_alternative<call_node>(val)) {
 				call_node& cn = std::get<call_node>(val);
 				cn.printContents(priorPrint);
@@ -148,12 +148,12 @@ namespace nc {	namespace comp {
 			argList.emplace_back(an.getArgument());
 		return new Queary(std::get<QuearyFunction>(func), std::move(argList), lineNum);
 	}
-	void call_node::printContents(const std::string& priorPrint) {
+	void call_node::printContents(const std::string& priorPrint)const {
 		printf("%s'%s'\n", priorPrint.c_str(), functionToken.representation.c_str());
 		for (size_t i = 0; i < arguments.size(); i++)
 			arguments[i].printContents(priorPrint + "\t");
 	}
-	void call_node::getOperationFrom(node& commands) {
+	void call_node::getOperationFrom(node& commands)const {
 		if (!std::holds_alternative<OperationFunction>(func))
 			throw(new QUEARY_CANNOT_BE_USED_AS_OPERATION);
 		argument_list argList;
@@ -204,6 +204,55 @@ namespace nc {	namespace comp {
 		return std::atoi(s.c_str());
 	}
 
+	ERROR_MAKE(EXPECTED_NODE);
+	ERROR_MAKE(EXPECTED_OPEN_NODE);
+	ERROR_MAKE(EXPECTED_OPERATION);
+	ERROR_MAKE(EXPECTED_OPEN_BRACKET);
+	ERROR_MAKE(EXPECTED_CLOSE_BRACKET);
+	ERROR_MAKE(EXPECTED_ARGUMENT);
+	ERROR_MAKE(EXPECTED_ARGUMENT_SEPERATOR);
+	ERROR_MAKE(EXPECTED_ASSIGNMENT_OPERATOR);
+	ERROR_MAKE(EXPECTED_LINE_TERMINATOR);
+	ERROR_MAKE(EXPECTED_QUEARY);
+	ERROR_MAKE(EXPECTED_EOL);
+	ERROR_MAKE(USED_EXPIRED_NODE_PARSE);
+	ERROR_MAKE(ELSE_HAS_NO_PARENT);
+
+	struct ParserPack {
+		std::unordered_map<std::string, node_index> nodeMappings;
+		node_index nextIndex = 0;
+		compilation_environment* compEnv;
+		std::vector<std::vector<call_node>> syntaxTree;
+		token_stream tokens;
+
+		ParserPack(std::vector<token>& tokens, compilation_environment* compEnv):
+			compEnv(compEnv),
+			tokens(tokens)
+		{}
+	};
+
+	argument_node getArgumentNode(token_stream& ts, compilation_environment& env);
+	std::vector<call_node> getNode(ParserPack& pack);
+	std::vector<call_node> getNode(ParserPack& pack);
+
+	void emplaceArguments(token_stream& ts, compilation_environment& env, std::vector<argument_node>& arguments) {
+		if (ts.get().type != open_bracket)throw(new EXPECTED_OPEN_BRACKET);
+		if (ts.peek().type == close_bracket) {
+			ts.get();
+			return;
+		}
+		bool expectToBeOver = false;
+		while (ts.peek().type != close_bracket && !expectToBeOver) {
+			arguments.emplace_back(getArgumentNode(ts, env));
+			if (ts.peek().type != argument_seperator)
+				expectToBeOver = true;
+			else
+				ts.get();
+		}
+		if (!(ts.get().type == close_bracket && expectToBeOver))
+			throw(new EXPECTED_ARGUMENT);
+	}
+
 	argument_node getVariableArgNode(const token& t, compilation_environment& env) {
 		argument_node argNode;
 		argNode = env.getVariable(t.representation);
@@ -214,7 +263,7 @@ namespace nc {	namespace comp {
 		argument_node argNode;
 		if (t.type == boolean) {
 			if (t.representation == "true")argNode = std::make_any<bool>(true);
-			else if (t.representation == "false")argNode = std::make_any<bool>(true);
+			else if (t.representation == "false")argNode = std::make_any<bool>(false);
 			else throw(new INVALID_BOOLEAN);
 		}
 		else if (t.type == floating_point)
@@ -229,28 +278,209 @@ namespace nc {	namespace comp {
 		argNode.valueToken = t;
 		return argNode;
 	}
+	argument_node getArgumentNode(token_stream& ts, compilation_environment& env);
+	argument_node getQuearyArgNode(token_stream& ts, compilation_environment& env) {
+		call_node cn;
+		cn.func = env.getQueary(ts.peek().representation);
+		cn.lineNum = ts.peek().lineNumber;
+		cn.functionToken = ts.get();
 
+		emplaceArguments(ts, env, cn.arguments);
 
-	ERROR_MAKE(EXPECTED_NODE);
-	ERROR_MAKE(EXPECTED_OPEN_NODE);
-	ERROR_MAKE(EXPECTED_OPERATION);
-	ERROR_MAKE(EXPECTED_OPEN_BRACKET);
-	ERROR_MAKE(EXPECTED_CLOSE_BRACKET);
-	ERROR_MAKE(EXPECTED_ARGUMENT);
-	ERROR_MAKE(EXPECTED_ARGUMENT_SEPERATOR);
-	ERROR_MAKE(EXPECTED_ASSIGNMENT_OPERATOR);
-	ERROR_MAKE(EXPECTED_LINE_TERMINATOR);
-	ERROR_MAKE(EXPECTED_QUEARY);
-	ERROR_MAKE(EXPECTED_EOL);
+		argument_node argNode;
+		argNode.val = cn;
+		argNode.valueToken = cn.functionToken;
+		return argNode;
+	}
+	
+	argument_node getBracketedArgNode(token_stream& ts, compilation_environment& env) {
+		if (ts.get().type != open_bracket)
+			throw(new EXPECTED_OPEN_BRACKET);
+		argument_node left = getArgumentNode(ts, env);
+		if (ts.peek().type != close_bracket) {
+			if (ts.peek().type != queary) {
+				call_node cn;
+				cn.lineNum = ts.peek().lineNumber;
+				cn.functionToken = ts.peek();
+				cn.func = env.getQueary(ts.get().representation);
+				cn.arguments.emplace_back(left);
+				cn.arguments.emplace_back(getArgumentNode(ts, env));
+				if (ts.get().type != close_bracket)
+					throw(new EXPECTED_CLOSE_BRACKET);
+				
+				argument_node bArg;
+				bArg.val = cn;
+				bArg.valueToken = cn.functionToken;
+				return bArg;
+			}
+		}
+		return left;
+	}
+	argument_node getArgumentNode(token_stream& ts, compilation_environment& env){
+		if (ts.peek().type == queary)
+			return getQuearyArgNode(ts, env);
+		else if (ts.peek().type == variable)
+			return getVariableArgNode(ts.get(), env);
+		else if (ts.peek().type == open_bracket)
+			return getBracketedArgNode(ts, env);
+		else
+			return getConstantArgNode(ts.get(), env);
+	}
 
-	class parser {
+	call_node getEndIf() {
+		call_node cn;
+		cn.func = stlib::op::break_from_if;
+		cn.lineNum = -1;
+		return cn;
+	}
+
+	void emplaceIfElseStreamNodes(ParserPack& pack, std::vector<call_node>& cn) {
+		bool inIf = true;
+		cn.emplace_back();
+		call_node& node = cn.back();
+		node.func = stlib::op::conditional_if;
+		node.lineNum = pack.tokens.peek().lineNumber;
+		node.functionToken = pack.tokens.peek();
+		node.arguments.emplace_back();
+		std::shared_ptr<stlib::if_pack> ip = std::make_shared<stlib::if_pack>();
+		node.arguments.back() = std::make_any<std::shared_ptr<stlib::if_pack>>(ip);
+		
+		while (inIf) {
+			node_index conditionalIndex = pack.nextIndex;
+			pack.tokens.get();
+			if (!ip->hasFinalElse) {
+				if (pack.tokens.get().type != open_bracket)
+					throw(new EXPECTED_OPEN_BRACKET);
+				ip->triggers.emplace_back(getArgumentNode(pack.tokens, *pack.compEnv).getArgument());
+				if (pack.tokens.get().type != close_bracket)
+					throw(new EXPECTED_CLOSE_BRACKET);
+				ip->resultantNodes.emplace_back(conditionalIndex);
+			}
+			else
+				ip->elseNode = conditionalIndex;
+
+			pack.nodeMappings["#l" + std::to_string(node.lineNum) + "_icb"] = conditionalIndex;
+			pack.nextIndex += 1;
+
+			auto conditionalNode = getNode(pack);
+			//Leave if node afterwards
+			conditionalNode.emplace_back(getEndIf());
+			pack.syntaxTree.emplace_back(conditionalNode);
+
+			if (pack.tokens.peek().representation == "else") {
+				if (ip->hasFinalElse)
+					throw(new ELSE_HAS_NO_PARENT);
+				else
+					ip->hasFinalElse = true;
+			}
+			else if (pack.tokens.peek().representation != "elif") {
+				inIf = false;
+			}
+		}
+	}
+	void emplaceWhileNodes(ParserPack& pack, std::vector<call_node>& cn);
+	void emplaceAssignmentCallNode(ParserPack& pack, std::vector<call_node>& cn) {
+		argument_node left = getArgumentNode(pack.tokens, *pack.compEnv);
+		if (pack.tokens.peek().representation != "=")
+			throw(new EXPECTED_ASSIGNMENT_OPERATOR);
+		cn.emplace_back();
+		cn.back().func = stlib::op::assign;
+		cn.back().functionToken = pack.tokens.peek();
+		cn.back().lineNum = pack.tokens.get().lineNumber;
+		cn.back().arguments.emplace_back(left);
+		cn.back().arguments.emplace_back(getArgumentNode(pack.tokens, *pack.compEnv));
+
+		if (pack.tokens.get().type != line_terminator)
+			throw(new EXPECTED_LINE_TERMINATOR);
+	}
+	void emplaceGenericCallNode(ParserPack& pack, std::vector<call_node>& cn) {
+		OperationFunction func = pack.compEnv->getOpereration(pack.tokens.peek().representation);
+
+		cn.emplace_back();
+		cn.back().func = func;
+		cn.back().functionToken = pack.tokens.peek();
+		cn.back().lineNum = pack.tokens.get().lineNumber;
+
+		emplaceArguments(pack.tokens, *pack.compEnv, cn.back().arguments);
+
+		if (pack.tokens.get().type != line_terminator)
+			throw(new EXPECTED_EOL);
+	}
+	void emplaceCallNode(ParserPack& pack, std::vector<call_node>& cn) {
+		printf("ECN '%s'\n", pack.tokens.peek().representation.c_str());
+		if (pack.tokens.peek().type == variable) {
+			emplaceAssignmentCallNode(pack, cn);
+			return;
+		}
+		OperationFunction func = pack.compEnv->getOpereration(pack.tokens.peek().representation);
+		if (func == stlib::op::conditional_if) {
+			emplaceIfElseStreamNodes(pack, cn);
+			return;
+		}
+		else if (func == stlib::op::while_loop) {
+			//emplaceWhileNodes(pack, cn);
+			return;
+		}
+		else {
+			emplaceGenericCallNode(pack, cn);
+		}
+	}
+	//From open node to end node
+	std::vector<call_node> getNode(ParserPack& pack) {
+		std::vector<call_node> cn;
+		if (pack.tokens.get().type != open_node)
+			throw(new EXPECTED_OPEN_NODE);
+		while (pack.tokens.peek().type != close_node)
+			emplaceCallNode(pack, cn);
+		pack.tokens.get();
+		return cn;
+	}
+	
+	ParserPack parseTokens(std::vector<token>& tokens, compilation_environment* compEnv) {
+		ParserPack pack(tokens, compEnv);
+		while (pack.tokens.peek().type != null_token) {
+			if (pack.tokens.peek().type != variable)
+				throw(new EXPECTED_NODE);
+			const token& t = pack.tokens.get();
+			pack.syntaxTree.emplace_back(getNode(pack));
+
+			//Set the rep up after, so any conditional nodes inside don't clash
+			pack.nodeMappings[t.representation] = pack.nextIndex;
+			*compEnv->getVariable(t.representation) = pack.nextIndex;
+			pack.nextIndex += 1;
+		}
+
+		return pack;
+	}
+
+	std::unique_ptr<program> compile(const ParserPack& pack) {
+		std::unique_ptr<program> p = std::make_unique<program>();
+		p->nodeMappings = pack.nodeMappings;
+		p->ownedVariables = pack.compEnv->getNewVariables();
+
+		for (size_t i = 0; i < pack.syntaxTree.size(); i++) {
+			p->nodes.emplace_back();
+			printf(">");
+			for (size_t j = 0; j < pack.syntaxTree[i].size(); j++) {
+				pack.syntaxTree[i][j].getOperationFrom(p->nodes.back());
+				pack.syntaxTree[i][j].printContents("\t");
+			}
+		}
+		return p;
+	}
+
+	//The plan is that once they are in an if statement or some bullshit it just lol lmao makes another
+	class node_parser {
 	public:
 
-		void giveToken(const token& t) {
+		bool giveToken(const token& t) {
 			if (t.type == null_token)
-				return;
+				return true;
 
 			switch (currentState) {
+			case finished_task:
+				throw(new USED_EXPIRED_NODE_PARSE);
+				break;
 			case look_for_node:
 				if (t.type != variable)
 					throw(new EXPECTED_NODE);
@@ -268,8 +498,8 @@ namespace nc {	namespace comp {
 				break;
 			case look_for_operation:
 				if (t.type == close_node) {
-					currentState = look_for_node;
-					break;
+					currentState = finished_task;
+					return true;
 				}
 				else {
 					callNodes.back().emplace_back();
@@ -428,6 +658,7 @@ namespace nc {	namespace comp {
 					currentState = look_for_operation;
 				}
 			}
+			return false;
 		}
 
 		void printState() {
@@ -456,7 +687,11 @@ namespace nc {	namespace comp {
 			return p;
 		}
 
-		parser(compilation_environment* compEnv):
+		std::vector<std::vector<call_node>>& getCallNode() {
+			return callNodes;
+		}
+
+		node_parser(compilation_environment* compEnv):
 			compEnv(compEnv)
 		{}
 
@@ -466,7 +701,8 @@ namespace nc {	namespace comp {
 			look_for_operation, opening_operation, closing_operation,
 			look_for_argument, looking_for_seperator, opening_queary,
 			starting_assignment, assignment_r_arg, possible_end_assignment_or_queary,
-			left_arg, middleOperator, right_arg
+			left_arg, middleOperator, right_arg,
+			finished_task
 		};
 
 		static const std::unordered_map<State, std::string> statePrintValues;
@@ -520,7 +756,7 @@ namespace nc {	namespace comp {
 		look_for_operation, opening_operation, closing_operation,
 		look_for_argument, looking_for_seperator, opening_queary,
 		starting_assignment, left_arg, middleOperator, right_arg*/
-	const std::unordered_map<parser::State, std::string> parser::statePrintValues = {
+	const std::unordered_map<node_parser::State, std::string> node_parser::statePrintValues = {
 		{look_for_node, "looking for node"}, {opening_node, "opening a node"},
 		{look_for_operation, "looking for operation"}, {opening_operation, "opening an operation"},
 		{closing_operation, "closing out operation"}, {look_for_argument, "looking for an argument to op/q"},

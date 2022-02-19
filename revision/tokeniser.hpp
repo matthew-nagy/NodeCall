@@ -3,6 +3,7 @@
 #define NC_TOKENISER_HPP
 #include "Standard_Library.hpp"
 #include <unordered_set>
+#include <fstream>
 
 namespace nc{   namespace comp{
 
@@ -229,17 +230,22 @@ namespace nc{   namespace comp{
             return trueLineNumbers[currentLineIndex];
         }
 
+        source(const std::string& name) {
+            std::ifstream file;
+            file.open(name, std::ios::in);
+            printf("Source is at >'%s'\n", name.c_str());
+            createFromLines(lineFromFile(file));
+
+            for (auto& s : lines)
+                printf("\t%s\n", s.c_str());
+        }
+
+        source(std::ifstream& file) {
+            createFromLines(lineFromFile(file));
+        }
+
         source(const std::vector<std::string>& code) {
-            for (size_t i = 0; i < code.size(); i++) {
-
-                if (lineValid(code[i])) {
-                    lines.emplace_back(getStrippedLine(code[i]));
-                    trueLineNumbers.emplace_back(i);
-                }
-
-            }
-
-            currentCharacterIndex = currentLineIndex = 0;
+            createFromLines(code);
         }
 
     private:
@@ -250,11 +256,44 @@ namespace nc{   namespace comp{
         size_t currentCharacterIndex;
 
         bool lineValid(const std::string& line){
-            return true;
+            if (line == "")return false;
+            for (size_t i = 0; i < line.size(); i++) {
+                if (isComment(line[i]))//Entire line is a comments
+                    return false;
+                else if (!isWhitespace(line[i]))//Some non whitespace character ready to read
+                    return true;
+            }
+            return false;//No character was found
         }
 
         std::string getStrippedLine(const std::string& line) {
             return line;
+        }
+        
+        void createFromLines(const std::vector<std::string>& code) {
+            for (size_t i = 0; i < code.size(); i++) {
+
+                if (lineValid(code[i])) {
+                    for (size_t j = 0; j < code[i].size(); j++) {
+                        if (!isWhitespace(code[i][j])) {
+                            lines.emplace_back(getStrippedLine(code[i].substr(j)));
+                            trueLineNumbers.emplace_back(i);
+                            break;
+                        }
+                    }
+                }
+
+            }
+
+            currentCharacterIndex = currentLineIndex = 0;
+        }
+
+        std::vector<std::string> lineFromFile(std::ifstream& file) {
+            std::string line;
+            std::vector<std::string> lines;
+            while (std::getline(file, line))
+                lines.emplace_back(std::move(line));
+            return lines;
         }
     };
 

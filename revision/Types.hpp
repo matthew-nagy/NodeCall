@@ -191,6 +191,7 @@ namespace nc{
         void requestReturn();
         void requestBreak();
         void requestTerminate();
+        void endIf();
 
         //Probably only used to set up the arguments for a conditional block.
         std::condition_variable& getConditionVariable()const;

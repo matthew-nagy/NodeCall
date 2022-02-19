@@ -24,7 +24,6 @@ argument& argument::operator=(Queary* queary){
 argument::argument(std::any* constant):
     innerQueary(nullptr)
 {
-    printf("NANI\n");
     assignedValue.reset(constant);
 }
 argument::argument(const value& variable):
@@ -173,6 +172,15 @@ void runtime_resources::exitOnType(call_type type){
 }
 void runtime_resources::requestTerminate(){
     parent.pause();
+}
+ERROR_MAKE(CANNOT_EXIT_NON_IF_IN_THIS_WAY);
+void runtime_resources::endIf() {
+    if (parent.currentFrame.exitType == call_type::call_cond_definate) {
+        parent.currentFrame = parent.callStack.top();
+        parent.callStack.pop();
+    }
+    else throw(new CANNOT_EXIT_NON_IF_IN_THIS_WAY);
+
 }
 
 //Probably only used to set up the arguments for a conditional block.
