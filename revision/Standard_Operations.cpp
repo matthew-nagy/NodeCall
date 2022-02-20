@@ -40,7 +40,6 @@ namespace op{
             if (triggerValue->type() != typeid(bool))
                 throw(-1);
             if(std::any_cast<bool>(*triggerValue)){
-                printf(">> Condition %zu is true\n", i);
                 runResource->call(call_cond_definate, ifs.resultantNodes[i]);
                 return;
             }
@@ -54,9 +53,15 @@ namespace op{
     opdef(conditional_else){}
     //The bottom of the resulting node should have a special if pack at the bottom to send it back to the same node
     opdef(while_loop){
-        while_top_pack& wtp = *std::any_cast<std::shared_ptr<while_top_pack>>(*args[0].getValue(runResource)).get();
-        if(std::any_cast<bool>(*wtp.trigger.getValue(runResource))){
-            runResource->call(call_cond_breakable, wtp.node);
+        while_pack& wp = *std::any_cast<std::shared_ptr<while_pack>>(*args[0].getValue(runResource)).get();
+        if(std::any_cast<bool>(*wp.trigger.getValue(runResource))){
+            runResource->call(call_cond_breakable, wp.node);
+        }
+    }
+    opdef(while_node_bottom) {
+        while_pack& wp = *std::any_cast<std::shared_ptr<while_pack>>(*args[0].getValue(runResource)).get();
+        if (std::any_cast<bool>(*wp.trigger.getValue(runResource))) {
+            runResource->sendToNode(wp.node);
         }
     }
     opdef(break_from_while){

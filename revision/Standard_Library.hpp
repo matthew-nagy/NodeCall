@@ -24,9 +24,14 @@ struct if_pack{
     node_index elseNode;
     bool hasFinalElse;
 };
-struct while_top_pack{
+struct while_pack{
     argument trigger;
     node_index node;
+
+    while_pack():
+        trigger(new std::any()),
+        node(0)
+    {}
 };
 struct sleep_pack{
     std::condition_variable* cond;
@@ -112,6 +117,7 @@ namespace op{
     opdef(conditional_elif);
     opdef(conditional_else);
     opdef(while_loop);
+    opdef(while_node_bottom);
     opdef(break_from_while);
     opdef(break_from_if);
     opdef(call_node);
