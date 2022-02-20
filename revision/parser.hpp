@@ -333,6 +333,21 @@ namespace nc {	namespace comp {
 		cn.lineNum = -1;
 		return cn;
 	}
+	call_node getEndWhile(std::shared_ptr<stlib::while_pack> whilePack) {
+		call_node ew;
+		ew.func = stlib::op::while_node_bottom;
+		ew.arguments.emplace_back();
+		ew.arguments.back() = std::make_any< std::shared_ptr<stlib::while_pack>>(whilePack);
+		ew.lineNum = -1;
+		return ew;
+	}
+	call_node getWhileBreak() {
+		call_node wb;
+		wb.func = stlib::op::break_from_while;
+		wb.lineNum = -1;
+		return wb;
+	}
+
 
 	void emplaceIfElseStreamNodes(ParserPack& pack, std::vector<call_node>& cn) {
 		bool inIf = true;
@@ -345,6 +360,8 @@ namespace nc {	namespace comp {
 		std::shared_ptr<stlib::if_pack> ip = std::make_shared<stlib::if_pack>();
 		node.arguments.back() = std::make_any<std::shared_ptr<stlib::if_pack>>(ip);
 		
+		//Used to track how many nodes are spawned for this. They all need unique names, or the node mappings become messed up
+		int deep = 0;
 		while (inIf) {
 			node_index conditionalIndex = pack.nextIndex;
 			pack.tokens.get();
@@ -359,7 +376,7 @@ namespace nc {	namespace comp {
 			else
 				ip->elseNode = conditionalIndex;
 
-			pack.nodeMappings["#l" + std::to_string(node.lineNum) + "_icb"] = conditionalIndex;
+			pack.nodeMappings["#l" + std::to_string(node.lineNum) + "_icb" + std::to_string(deep)] = conditionalIndex;
 			pack.nextIndex += 1;
 
 			auto conditionalNode = getNode(pack);
@@ -376,9 +393,37 @@ namespace nc {	namespace comp {
 			else if (pack.tokens.peek().representation != "elif") {
 				inIf = false;
 			}
+			deep++;
 		}
 	}
-	void emplaceWhileNodes(ParserPack& pack, std::vector<call_node>& cn);
+	void emplaceWhileNodes(ParserPack& pack, std::vector<call_node>& cn) {
+		cn.emplace_back();
+		call_node& node = cn.back();
+		node.func = stlib::op::while_loop;
+		node.functionToken = pack.tokens.peek();
+		node.lineNum = pack.tokens.get().lineNumber;
+		node.arguments.emplace_back();
+		std::shared_ptr<stlib::while_pack> wp = std::make_shared<stlib::while_pack>();
+		node.arguments.back() = std::make_any<std::shared_ptr<stlib::while_pack>>(wp);
+
+		if (pack.tokens.get().type != open_bracket)
+			throw(new EXPECTED_OPEN_BRACKET);
+		argument_node whileArg = getArgumentNode(pack.tokens, *pack.compEnv);
+		wp->trigger = whileArg.getArgument();
+		if (pack.tokens.get().type != close_bracket)
+			throw(new EXPECTED_CLOSE_BRACKET);
+
+
+		std::vector<call_node> whileNode = getNode(pack);
+		whileNode.emplace_back(getEndWhile(wp));
+		whileNode.emplace_back(getWhileBreak());
+
+
+		wp->node = pack.nextIndex;
+		pack.nodeMappings["#l" + std::to_string(node.lineNum) + "_wcb"] = pack.nextIndex;
+		pack.nextIndex++;
+		pack.syntaxTree.emplace_back(std::move(whileNode));
+	}
 	void emplaceAssignmentCallNode(ParserPack& pack, std::vector<call_node>& cn) {
 		argument_node left = getArgumentNode(pack.tokens, *pack.compEnv);
 		if (pack.tokens.peek().representation != "=")
@@ -407,7 +452,6 @@ namespace nc {	namespace comp {
 			throw(new EXPECTED_EOL);
 	}
 	void emplaceCallNode(ParserPack& pack, std::vector<call_node>& cn) {
-		printf("ECN '%s'\n", pack.tokens.peek().representation.c_str());
 		if (pack.tokens.peek().type == variable) {
 			emplaceAssignmentCallNode(pack, cn);
 			return;
@@ -418,7 +462,7 @@ namespace nc {	namespace comp {
 			return;
 		}
 		else if (func == stlib::op::while_loop) {
-			//emplaceWhileNodes(pack, cn);
+			emplaceWhileNodes(pack, cn);
 			return;
 		}
 		else {
@@ -453,17 +497,19 @@ namespace nc {	namespace comp {
 		return pack;
 	}
 
-	std::unique_ptr<program> compile(const ParserPack& pack) {
+	std::unique_ptr<program> compile(const ParserPack& pack, bool printout = false) {
 		std::unique_ptr<program> p = std::make_unique<program>();
 		p->nodeMappings = pack.nodeMappings;
 		p->ownedVariables = pack.compEnv->getNewVariables();
 
 		for (size_t i = 0; i < pack.syntaxTree.size(); i++) {
 			p->nodes.emplace_back();
-			printf(">");
+			if(printout)
+				printf(">");
 			for (size_t j = 0; j < pack.syntaxTree[i].size(); j++) {
 				pack.syntaxTree[i][j].getOperationFrom(p->nodes.back());
-				pack.syntaxTree[i][j].printContents("\t");
+				if(printout)
+					pack.syntaxTree[i][j].printContents("\t");
 			}
 		}
 		return p;
@@ -643,7 +689,6 @@ namespace nc {	namespace comp {
 						throw(new EXPECTED_CLOSE_BRACKET);
 					else {
 						bracketDepth -= 1;
-						printf("close bracket (%u)\n", bracketDepth);
 						argNodes.pop();
 						currentCallNode.pop();
 						if (bracketsWereOnLeft.top())
@@ -736,7 +781,6 @@ namespace nc {	namespace comp {
 			argNodes.emplace(&currentCallNode.top()->arguments);
 			bracketsWereOnLeft.emplace(onLeft);
 			currentState = left_arg;
-			printf("Open bracket (%u)\n", bracketDepth);
 		}
 
 		void exitFunction() {
