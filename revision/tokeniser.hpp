@@ -104,6 +104,7 @@ namespace nc{   namespace comp{
             throw(new UNKNOWN_QUEARY_REQUESTED);
         }
         value getVariable(const std::string& s) {
+            printf("variable name is >'%s'<\n", s.c_str());
             for (auto& l : libraries)
                 if (l->variables.count(s) > 0)
                     return l->variables.find(s)->second;
@@ -382,11 +383,17 @@ namespace nc{   namespace comp{
         char c1 = sourceCode.get();
         if (_single_char_tokens.count(c1) > 0) {
             char c2 = sourceCode.peek();
-            std::string compString = { c2, c2, '\0' };
-            if (_double_char_tokens.count(compString) > 0)
+            std::string compString = "  ";
+            compString[0] = c1;
+            compString[1] = c2;
+            if (_double_char_tokens.count(compString) > 0) {
+                //Take that second one too then
+                sourceCode.get();
                 return token(compString, lineNum, _double_char_tokens.find(compString)->second);
-            else
+            }
+            else {
                 return token(std::string() + c1, lineNum, _single_char_tokens.find(c1)->second);
+            }
         }
         sourceCode.replace();
 
