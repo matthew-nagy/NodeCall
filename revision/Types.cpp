@@ -107,11 +107,16 @@ Runtime::Runtime():
     runtimeResource(new runtime_resources(*this))
 {
     std::unique_lock<std::mutex> launchLock(internalMutex);
+    std::atomic_bool busyWaitLaunch = true;
     //Send of the script thread
-    std::thread([this](){
+    std::thread([this](std::atomic_bool& setupRequired){
+        //This lock will persist until the thread shuts down
+        std::unique_lock<std::mutex> shutdownLock(shutdownMutex);
+        setupRequired = false;
         this->runProgram();
-    }).detach();
-    conditionVariable.wait(launchLock);
+    }, std::ref(busyWaitLaunch)).detach();
+
+    while(busyWaitLaunch){}
 }
 
 Runtime::~Runtime(){
@@ -122,8 +127,6 @@ Runtime::~Runtime(){
 }
 
 void Runtime::runProgram(){
-    //This lock will persist until the thread shuts down
-    std::unique_lock<std::mutex> shutdownMutex;
     conditionVariable.notify_one();
     //This lock allows this thread to wait while there is nothing to run
     std::unique_lock<std::mutex> myLock(internalMutex);
@@ -134,6 +137,7 @@ void Runtime::runProgram(){
             currentFrame.nextInstruction++;
             op(runtimeResource);
         }
+        runsExecuted += 1;
     }
 }
     

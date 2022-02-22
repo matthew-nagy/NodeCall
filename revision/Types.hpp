@@ -151,6 +151,10 @@ namespace nc{
 
         bool isRunning()const;
 
+        unsigned getNodesExecuted()const {
+            return runsExecuted;
+        }
+
         void pause();
 
         void enterProgramAt(const std::string& nodeName);
@@ -177,6 +181,7 @@ namespace nc{
         std::unique_ptr<program> currentProgram;            //The current program being run on the script thread
         std::unique_ptr<runtime_resources> runtimeResource; //Method of exposing functionality to threads without giving them master control
 
+        std::atomic_uint16_t runsExecuted = 0;                          //Counts how many times this runtime has been used to execute something
 
         void runProgram();
     };
