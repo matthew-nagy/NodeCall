@@ -21,8 +21,8 @@ bool is_true(argument& val, unique_run_resource& runResource);
 struct if_pack{
     argument_list triggers;
     std::vector<node_index> resultantNodes;
-    node_index elseNode;
-    bool hasFinalElse;
+    node_index elseNode = 0;
+    bool hasFinalElse = false;
 };
 struct while_pack{
     argument trigger;

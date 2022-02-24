@@ -27,6 +27,7 @@ namespace nc{
     class argument;
     class runtime_resources;
     class Runtime;
+    class REPL;
 
     //Some value to be used. May be a constant stored once, may be a variable shared across the program
     typedef std::shared_ptr<std::any> value;
@@ -146,6 +147,7 @@ namespace nc{
     //The runtime of a Node Call script.
     class Runtime{
         friend class runtime_resources;
+        friend class REPL;
     public:
         variable_blackboard& blackboard();
 

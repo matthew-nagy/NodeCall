@@ -2,6 +2,7 @@
 #include "Standard_Library.hpp"
 #include "tokeniser.hpp"
 #include "parser.hpp"
+#include "repl.hpp"
 
 
 
@@ -80,10 +81,10 @@ void ncFibTest() {
     auto l = std::make_shared<nc::additional_library>();
     l->operations = nc::stlib::_standard_operations;
     l->quearies = nc::stlib::_standard_quearies;
-    nc::comp::compilation_environment ce;
-    ce.addLibrary(l);
-    auto t = nc::comp::tokeniseSource(s, ce);
-    std::unique_ptr<nc::program> program = nc::comp::compile(nc::comp::parseTokens(t, &ce));
+    std::shared_ptr<nc::comp::compilation_environment> ce = std::make_shared<nc::comp::compilation_environment>();
+    ce->addLibrary(l);
+    auto t = nc::comp::tokeniseSource(s, *ce);
+    std::unique_ptr<nc::program> program = nc::comp::compile(nc::comp::parseTokens(t, ce));
     nc::Runtime runtime;
     runtime.loadProgram(std::move(program));
 
