@@ -221,11 +221,11 @@ namespace nc {	namespace comp {
 	struct ParserPack {
 		std::unordered_map<std::string, node_index> nodeMappings;
 		node_index nextIndex = 0;
-		compilation_environment* compEnv;
+		std::shared_ptr<compilation_environment> compEnv;
 		std::vector<std::vector<call_node>> syntaxTree;
 		token_stream tokens;
 
-		ParserPack(std::vector<token>& tokens, compilation_environment* compEnv):
+		ParserPack(std::vector<token>& tokens, const std::shared_ptr<compilation_environment>& compEnv):
 			compEnv(compEnv),
 			tokens(tokens)
 		{}
@@ -480,7 +480,7 @@ namespace nc {	namespace comp {
 		return cn;
 	}
 	
-	ParserPack parseTokens(std::vector<token>& tokens, compilation_environment* compEnv) {
+	ParserPack parseTokens(std::vector<token>& tokens, const std::shared_ptr<compilation_environment>& compEnv) {
 		ParserPack pack(tokens, compEnv);
 		while (pack.tokens.peek().type != null_token) {
 			if (pack.tokens.peek().type != variable)
