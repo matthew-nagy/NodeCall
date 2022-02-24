@@ -155,6 +155,8 @@ namespace nc{
             return runsExecuted;
         }
 
+        void setPrintFunction(void(*newPrintFunction)(const std::string&));
+
         void pause();
 
         void enterProgramAt(const std::string& nodeName);
@@ -166,6 +168,11 @@ namespace nc{
         ~Runtime();
 
     private:
+
+        void (*printFunction)(const std::string&);
+
+        static void defaultPrint(const std::string& s);
+
         variable_blackboard internalBlackboard;                 //A type agnostic storage for datatypes. Very useful for extentions
         std::condition_variable conditionVariable;              //Should the script ever need to wait, this is what it waits on
         std::condition_variable launchShutdownVariable;         //Once the script stopped running, wait on this to launch again, or stop running
@@ -197,6 +204,9 @@ namespace nc{
         void requestBreak();
         void requestTerminate();
         void endIf();
+
+        //Prints out using the Runtime's print pointer
+        void print(const std::string& s);
 
         //Probably only used to set up the arguments for a conditional block.
         std::condition_variable& getConditionVariable()const;

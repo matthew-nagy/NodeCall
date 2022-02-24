@@ -76,6 +76,11 @@ bool Runtime::isRunning()const{
     return running;
 }
 
+void Runtime::setPrintFunction(void(*newPrintFunction)(const std::string&)) {
+    printFunction = newPrintFunction;
+}
+
+
 void Runtime::pause(){
     running = false;
     //Wakes up the script thread if it was waiting
@@ -104,7 +109,8 @@ void Runtime::loadProgram(std::unique_ptr<program>&& newProgram){
 Runtime::Runtime():
     running(false),
     shutdownFlag(false),
-    runtimeResource(new runtime_resources(*this))
+    runtimeResource(new runtime_resources(*this)),
+    printFunction(Runtime::defaultPrint)
 {
     std::unique_lock<std::mutex> launchLock(internalMutex);
     std::atomic_bool busyWaitLaunch = true;
@@ -124,6 +130,11 @@ Runtime::~Runtime(){
     pause();                //Make sure its no longer running so it can register that flag
     launchShutdownVariable.notify_one();    //Launch it again in case it got stuck somewhere ig
     std::unique_lock<std::mutex> sync(shutdownMutex);   //now take the mutex that the script holds throughout its lifetime. This proves it has finished
+}
+
+
+void Runtime::defaultPrint(const std::string& s) {
+    printf("%s", s.c_str());
 }
 
 void Runtime::runProgram(){
@@ -185,6 +196,11 @@ void runtime_resources::endIf() {
     }
     else throw(new CANNOT_EXIT_NON_IF_IN_THIS_WAY);
 
+}
+
+//Prints out using the Runtime's print pointer
+void runtime_resources::print(const std::string& s) {
+    parent.printFunction(s);
 }
 
 //Probably only used to set up the arguments for a conditional block.

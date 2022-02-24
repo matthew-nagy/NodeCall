@@ -9,12 +9,12 @@ namespace op{
     opdef(print){
         argument_list al;
         for(size_t i = 0; i < args.size(); i++){
-            printf("%s", std::any_cast<std::string>(*args[i].getValue(runResource)).c_str());
+            runResource->print(std::any_cast<std::string>(*args[i].getValue(runResource)).c_str());
         }
     }
     opdef(println){
         print(args, runResource);
-        printf("\n");
+        runResource->print("\n");
     }
 
     //Assignment
