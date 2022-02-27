@@ -111,6 +111,9 @@ namespace nc{
         VariableTable variables;
         QuearyTable quearies;
         OperationTable operations;
+
+        //Standard for node call
+        static const std::shared_ptr<additional_library> standardLibrary;
     };
 
     struct program{
@@ -153,9 +156,7 @@ namespace nc{
 
         bool isRunning()const;
 
-        unsigned getNodesExecuted()const {
-            return runsExecuted;
-        }
+        unsigned getNodesExecuted()const;
 
         void setPrintFunction(void(*newPrintFunction)(const std::string&));
 

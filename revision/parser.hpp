@@ -515,6 +515,37 @@ namespace nc {	namespace comp {
 		return p;
 	}
 
+
+	std::shared_ptr<comp::compilation_environment> createEnvironment(const std::vector<std::shared_ptr<additional_library>>& libraries) {
+		std::shared_ptr<comp::compilation_environment> env = std::make_shared<comp::compilation_environment>();
+		for (auto& lib : libraries)
+			env->addLibrary(lib);
+		return env;
+	}
+
+	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::vector<std::string>& sourceCode) {
+		comp::source programSource(sourceCode);
+		auto tokens = comp::tokeniseSource(programSource, *environment);
+
+		comp::ParserPack parsePack(tokens, environment);
+
+		return comp::compile(parsePack);
+	}
+	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::string& programPath) {
+		std::ifstream sourceFile;
+		sourceFile.open(programPath, std::ios::in);
+		std::vector<std::string> sourceCode;
+		//Just a guess to start off with, but this will prevent the first few resize and copies
+		sourceCode.reserve(20);
+		std::string line;
+		while (std::getline(sourceFile, line)) {
+			sourceCode.emplace_back(std::move(line));
+		}
+		sourceFile.close();
+
+		return compileProgram(environment, sourceCode);
+	}
+
 }}
 
 

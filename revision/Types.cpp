@@ -1,4 +1,5 @@
 #include "Types.hpp"
+#include "Standard_Library.hpp"
 
 namespace nc{
 
@@ -65,7 +66,14 @@ Operation::Operation(OperationFunction func, argument_list&& arguments, unsigned
 }
 
 
+std::shared_ptr<additional_library> getNCSTD() {
+    std::shared_ptr<additional_library> lib = std::make_shared<additional_library>();
+    lib->operations = stlib::_standard_operations;
+    lib->quearies = stlib::_standard_quearies;
+    return lib;
+}
 
+const std::shared_ptr<additional_library>additional_library::standardLibrary = getNCSTD();
 
 
 variable_blackboard& Runtime::blackboard(){
@@ -74,6 +82,10 @@ variable_blackboard& Runtime::blackboard(){
 
 bool Runtime::isRunning()const{
     return running;
+}
+
+unsigned Runtime::getNodesExecuted()const {
+    return runsExecuted;
 }
 
 void Runtime::setPrintFunction(void(*newPrintFunction)(const std::string&)) {
@@ -231,6 +243,5 @@ void runtime_resources::blockOnCondition(void(*onceLockedFunction)(const std::an
 runtime_resources::runtime_resources(Runtime& parent):
     parent(parent)
 {}
-
 
 }

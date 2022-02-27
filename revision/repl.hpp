@@ -65,13 +65,28 @@ namespace nc {
 			connectedRuntime->printFunction(availableMappings);
 		}
 		void parseVariableRequest(const std::string& request) {
+			std::string availableMappings = ">Found Variables\n";
+			auto mappings = compEnv->getVariables(request);
+			for(auto& s : mappings)
+				availableMappings += "\t" + s.first + "\n";
 
+			connectedRuntime->printFunction(availableMappings);
 		}
 		void parseQuearyRequest(const std::string& request) {
-		
+			std::string availableMappings = ">Found Queary functions\n";
+			auto mappings = compEnv->getQuearys(request);
+			for (auto& s : mappings)
+				availableMappings += "\t" + s.first + "\n";
+
+			connectedRuntime->printFunction(availableMappings);
 		}
 		void parseFunctionRequest(const std::string& request) {
-		
+			std::string availableMappings = ">Found Operational Functions\n";
+			auto mappings = compEnv->getOperations(request);
+			for (auto& s : mappings)
+				availableMappings += "\t" + s.first + "\n";
+
+			connectedRuntime->printFunction(availableMappings);
 		}
 
 		void evaluateCommands(const std::string& commands) {
