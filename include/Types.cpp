@@ -112,17 +112,17 @@ void Runtime::enterProgramAt(const std::string& nodeName){
     launchShutdownVariable.notify_one();
 }
 
-void Runtime::loadProgram(std::unique_ptr<program>&& newProgram){
+void Runtime::loadProgram(const std::shared_ptr<program>& newProgram){
     if(running)
         throw(new CANNOT_CHANGE_PROGRAM_WHILE_PROGRAM_IS_RUNNING);
-    currentProgram = std::move(newProgram);
+    currentProgram = newProgram;
 }
 
 Runtime::Runtime():
     running(false),
     shutdownFlag(false),
-    runtimeResource(new runtime_resources(*this)),
-    printFunction(Runtime::defaultPrint)
+    printFunction(Runtime::defaultPrint),
+    runtimeResource(new runtime_resources(*this))
 {
     std::unique_lock<std::mutex> launchLock(internalMutex);
     std::atomic_bool busyWaitLaunch = true;

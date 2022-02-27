@@ -316,8 +316,10 @@ namespace nc {
         }
         token getStringToken(source& sourceCode) {
             char c = sourceCode.get();
-            if (c != '"')
+            if (!isStringChar(c))
                 throw(new ILLIGAL_STRING);
+
+            char openChar = c;
 
             token toret;
             toret.type = string;
@@ -325,6 +327,7 @@ namespace nc {
 
             c = sourceCode.get();
             do {
+                printf("%s\n", (std::string("") + c).c_str());
                 if (c == '\\') {
                     char replacement = 'n';
                     switch (sourceCode.peek()) {
@@ -340,6 +343,9 @@ namespace nc {
                     case '"':
                         replacement = '"';
                         break;
+                    case '\'':
+                        replacement = '\'';
+                        break;
                     }
                     if (replacement != 'n') {
                         c = replacement;
@@ -348,7 +354,7 @@ namespace nc {
                 }
                 toret.representation += c;
                 c = sourceCode.get();
-            } while (!isStringChar(c));
+            } while (c != openChar);
 
             return toret;
         }

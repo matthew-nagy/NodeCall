@@ -159,7 +159,7 @@ namespace q{
         value arg1 = args[0].getValue(runResource);
         if(arg1->type() == typeid(int)){
             int argl = std::any_cast<int>(*arg1);
-            return makeVal<int>(!argl);
+            return makeVal<int>(~argl);
         }
         else if(arg1->type() == typeid(float)){
             return makeVal<bool>(std::any_cast<float>(*args[0].getValue(runResource))  == 0.0);
@@ -377,7 +377,7 @@ namespace q{
         {"lshift", q::lshift}, {"rshift", q::rshift},
         {"<<", q::lshift}, {">>", q::rshift}, {"&", q::land}, {"|", q::lor}, {"!", q::lnot}, {"^", q::lxor},
 
-        {"and", q::band}, {"or", q::bor}, {"equals", q::beq}, {"not_equals", q::bneq},
+        {"and", q::band}, {"or", q::bor}, {"equals", q::beq}, {"not_equals", q::bneq}, {"not", q::lnot},
         {"&&", q::band}, {"||", q::bor}, {"==", q::beq}, {"!=", q::bneq},
 
         {"less", q::bless}, {"greater", q::bgreater}, {"less_eq", q::blesseq}, {"greater_eq", q::bgreatereq},

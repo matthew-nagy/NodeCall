@@ -105,13 +105,13 @@ namespace nc {	namespace comp {
 
 	std::unique_ptr<program> compile(const ParserPack& pack, bool printout = false);
 
+}
 
 	std::shared_ptr<comp::compilation_environment> createEnvironment(const std::vector<std::shared_ptr<additional_library>>& libraries);
 
-	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::vector<std::string>& sourceCode);
-	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::string& programPath);
-
-}}
+	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::vector<std::string>& sourceCode, bool printDetail = false);
+	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::string& programPath, bool printDetail = false);
+}
 
 
 #endif

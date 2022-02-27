@@ -416,6 +416,7 @@ namespace nc {
 		}
 
 		ParserPack parseTokens(std::vector<token>& tokens, const std::shared_ptr<compilation_environment>& compEnv) {
+			printf("IN PARSE TOKENS\n");
 			ParserPack pack(tokens, compEnv);
 			while (pack.tokens.peek().type != null_token) {
 				if (pack.tokens.peek().type != variable)
@@ -433,9 +434,15 @@ namespace nc {
 		}
 
 		std::unique_ptr<program> compile(const ParserPack& pack, bool printout) {
+			if(printout)
+				printf("Compiling\n");
+
 			std::unique_ptr<program> p = std::make_unique<program>();
 			p->nodeMappings = pack.nodeMappings;
 			p->ownedVariables = pack.compEnv->getNewVariables();
+
+			if(printout)
+				printf("Tree is:\n");
 
 			for (size_t i = 0; i < pack.syntaxTree.size(); i++) {
 				p->nodes.emplace_back();
@@ -449,37 +456,42 @@ namespace nc {
 			}
 			return p;
 		}
+	}
 
 
-		std::shared_ptr<comp::compilation_environment> createEnvironment(const std::vector<std::shared_ptr<additional_library>>& libraries) {
-			std::shared_ptr<comp::compilation_environment> env = std::make_shared<comp::compilation_environment>();
-			for (auto& lib : libraries)
-				env->addLibrary(lib);
-			return env;
+	std::shared_ptr<comp::compilation_environment> createEnvironment(const std::vector<std::shared_ptr<additional_library>>& libraries) {
+		std::shared_ptr<comp::compilation_environment> env = std::make_shared<comp::compilation_environment>();
+		for (auto& lib : libraries)
+			env->addLibrary(lib);
+		return env;
+	}
+
+	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::vector<std::string>& sourceCode, bool printDetail) {
+		comp::source programSource(sourceCode);
+		auto tokens = comp::tokeniseSource(programSource, *environment);
+
+		if(printDetail){
+			printf("Tokens>>\n");
+			for(auto& t : tokens)
+				printf("%s\t%s\n", t.representation.c_str(), comp::tokenRep.find(t.type)->second.c_str());
 		}
 
-		std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::vector<std::string>& sourceCode) {
-			comp::source programSource(sourceCode);
-			auto tokens = comp::tokeniseSource(programSource, *environment);
+		comp::ParserPack parsePack = comp::parseTokens(tokens, environment);
 
-			comp::ParserPack parsePack(tokens, environment);
-
-			return comp::compile(parsePack);
+		return comp::compile(parsePack, printDetail);
+	}
+	std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::string& programPath, bool printDetail) {
+		std::ifstream sourceFile;
+		sourceFile.open(programPath, std::ios::in);
+		std::vector<std::string> sourceCode;
+		//Just a guess to start off with, but this will prevent the first few resize and copies
+		sourceCode.reserve(20);
+		std::string line;
+		while (std::getline(sourceFile, line)) {
+			sourceCode.emplace_back(std::move(line));
 		}
-		std::shared_ptr<program> compileProgram(std::shared_ptr<comp::compilation_environment> environment, const std::string& programPath) {
-			std::ifstream sourceFile;
-			sourceFile.open(programPath, std::ios::in);
-			std::vector<std::string> sourceCode;
-			//Just a guess to start off with, but this will prevent the first few resize and copies
-			sourceCode.reserve(20);
-			std::string line;
-			while (std::getline(sourceFile, line)) {
-				sourceCode.emplace_back(std::move(line));
-			}
-			sourceFile.close();
+		sourceFile.close();
 
-			return compileProgram(environment, sourceCode);
-		}
-
+		return compileProgram(environment, sourceCode, printDetail);
 	}
 }

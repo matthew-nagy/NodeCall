@@ -164,7 +164,7 @@ namespace nc{
 
         void enterProgramAt(const std::string& nodeName);
 
-        void loadProgram(std::unique_ptr<program>&& newProgram);
+        void loadProgram(const std::shared_ptr<program>& newProgram);
 
         Runtime();
 
@@ -188,7 +188,7 @@ namespace nc{
         call_frame currentFrame;            //Current state of the program (node, instruction count, etc)
         std::stack<call_frame> callStack;   //Stack of all call frames, so a program can break and return
 
-        std::unique_ptr<program> currentProgram;            //The current program being run on the script thread
+        std::shared_ptr<program> currentProgram;            //The current program being run on the script thread
         std::unique_ptr<runtime_resources> runtimeResource; //Method of exposing functionality to threads without giving them master control
 
         std::atomic_uint16_t runsExecuted = 0;                          //Counts how many times this runtime has been used to execute something

@@ -1,0 +1,15 @@
+#Tests for the logical operators
+
+main{
+    shouldBe5 = (4 | 1);
+    shouldBe4 = (7 & 12);
+
+    println("| (or) test, should be 5:\t", itos(shouldBe5));
+    println("& (and) test, should be 4:\t", itos(shouldBe4));
+
+    everythingBut16And4 = (not(20) & 255);
+    println("~ (not) test, should be 8 bits but without the 16 and 4:\t", itos(everythingBut16And4));
+
+
+    end();
+}

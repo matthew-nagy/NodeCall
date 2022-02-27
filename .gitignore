@@ -1,0 +1,5 @@
+NCWindows
+NCWindows/*
+Main
+build/*.o
+lib/*.a

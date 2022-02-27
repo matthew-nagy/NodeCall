@@ -30,10 +30,6 @@ namespace nc {
 		void evaluateCommands(const std::string& commands);
 	};
 
-	const char REPL::metaCommand = '/';
-	const std::string REPL::replNodeName = "#REPL_node";
-
-
 }
 
 
