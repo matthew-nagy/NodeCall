@@ -1,5 +1,5 @@
-*.vcxproj*
-*old*
-Debug
-Release
-to do.txt
+NCWindows
+NCWindows/*
+Main
+build/*.o
+lib/*.a

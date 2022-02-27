@@ -1,0 +1,20 @@
+main{
+	println("##Testing addition##");
+	println("\tCorrect\tScript");
+	println("\t8\t", itos((3 + 5)));		#Integer addition
+	println("\t3\t", itos(add(0, 3)));
+	println("\t1.72\t", ftos((1.0 + 0.72)));		#Floating addition
+	println("\t9.45\t", ftos(add(4.32, 5.13)));
+	println("\tham\t", add("ha", "m"));		#String addition
+	print("\n\n");
+	
+	println("##Testing Subtraction##");
+	println("\t2\t", itos((5 - 3)));
+	println("\t7\t", itos(sub(20, 13)));
+	println("\t-0.3\t", ftos(sub(0.0, 0.3)));
+	println("\t4.87\t", ftos((8.0 - 3.13)));
+
+	println("Lmao will add more later lol");
+
+	end();
+}

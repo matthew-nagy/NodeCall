@@ -1,0 +1,80 @@
+if_stat_test{
+    
+    if(true){
+        println("\tSuccess, if true works");
+    }
+    else{
+        println("Faliure, if true doesn't work");
+    }
+    
+    if(false){
+        println("\tFaliure, if false doesn't work");
+    }
+    else{
+        println("\tSuccess, if false doesn't pass");
+    }
+
+    println("Should have had 2 tests above. Otherwise there is a problem with else statements as well");
+
+    println("\n\nTesting conditions");
+    shouldBe5 = (2 + 3);
+    if((shouldBe5 == 5)){
+        println("\tSuccess: Inline quearies work");
+    }
+    else{
+        println("\tFailure: Inline quearies fail");
+    }
+
+    if(equals(shouldBe5, 5)){
+        println("\tSuccess: explicit quearies work");
+    }
+    else{
+        println("\tFaliure: explicit quearies fail");
+    }
+
+    return();
+}
+
+while_loop_test{
+    sum = 0;
+    while((sum < 10)){
+        sum = (sum + 1);
+    }
+    println("Successfully reached end of while loop. Sum should be 10:\t", itos(sum));
+
+    println("Testing breaking from while loop");
+    count = 0;
+    breakOn = 4;
+    broke = false;
+    while((count < 10)){
+        count = (count + 1);
+        if((count == breakOn)){
+            broke = true;
+            break();
+        }
+    }
+
+    if(broke){
+        println("Successfully broke");
+    }
+    else{
+        println("Failed to break");
+    }
+
+    return();
+}
+
+main{
+
+    println("Testing if statements");
+
+    call_node(if_stat_test);
+    
+
+    println("\nTesting while loops");
+
+    call_node(while_loop_test);
+
+
+    end();
+}
