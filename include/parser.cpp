@@ -392,11 +392,11 @@ namespace nc {
 				return;
 			}
 			OperationFunction func = pack.compEnv->getOpereration(pack.tokens.peek().representation);
-			if (func == stlib::op::conditional_if) {
+			if (func.target<OperationFunction>() == stlib::op::conditional_if.target<OperationFunction>()) {
 				emplaceIfElseStreamNodes(pack, cn);
 				return;
 			}
-			else if (func == stlib::op::while_loop) {
+			else if (func.target<OperationFunction>() == stlib::op::while_loop.target<OperationFunction>()) {
 				emplaceWhileNodes(pack, cn);
 				return;
 			}

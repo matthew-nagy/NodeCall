@@ -38,7 +38,7 @@ struct sleep_pack{
     float toWait;  
 };
 
-#define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
+#define qdef(name) extern const std::function<value(argument_list&, unique_run_resource&)> name
 namespace q{
     //Mathmatic quearies
     qdef(add);
@@ -100,7 +100,7 @@ namespace q{
 }
 #undef qdef
 
-#define opdef(name) void name (argument_list& args, unique_run_resource& runResource)
+#define opdef(name) extern const std::function<void(argument_list& args, unique_run_resource& runResource)> name;
 namespace op{
     //IO
     opdef(print);
@@ -135,7 +135,7 @@ namespace op{
     opdef(list_push);
     opdef(list_push_back);
 }
-#undef qdef
+#undef opdef
 
 }
 }

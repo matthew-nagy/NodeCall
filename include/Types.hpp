@@ -18,6 +18,7 @@
 #include <fstream>
 #include <atomic>
 #include <exception>
+#include <functional>
 
 
 #define ERROR_MAKE(NAME) class NAME : public std::logic_error{ public: NAME () : std::logic_error( #NAME ){} }  
@@ -42,9 +43,9 @@ namespace nc{
     typedef std::vector<Operation> node;
 
     //A queary function performs some computation on its arguments, then returns a result
-    typedef value(*QuearyFunction)(argument_list&, unique_run_resource&);
+    typedef std::function<value(argument_list&, unique_run_resource&)> QuearyFunction;
     //An operation is presumed to perform some operation on the global state, facilitated through its arguments
-    typedef void(*OperationFunction)(argument_list&, unique_run_resource&);
+    typedef std::function<void(argument_list&, unique_run_resource&)> OperationFunction;
 
     //A mapping of queary names to their functions. Used in the compiler, where multiple tables may be provided
     typedef std::unordered_map<std::string, QuearyFunction> QuearyTable;

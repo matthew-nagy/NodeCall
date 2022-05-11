@@ -35,198 +35,198 @@ value makeVal(T input){
     return std::make_shared<std::any>(std::make_any<T>(input));
 }
 
-#define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
+#define qdef(name) const std::function<value(argument_list&, unique_run_resource&)> name = [](argument_list& args, unique_run_resource& runResource)
 namespace q{
     //Mathmatic quearies
-    qdef(add){
+    qdef(add) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int tot = std::any_cast<int>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot+=std::any_cast<int>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot += std::any_cast<int>(*args[i].getValue(runResource).get());
             return makeVal<int>(tot);
         }
-        else if(arg1->type() == typeid(float)){
+        else if (arg1->type() == typeid(float)) {
             float tot = std::any_cast<float>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot+=std::any_cast<float>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot += std::any_cast<float>(*args[i].getValue(runResource).get());
             return makeVal<float>(tot);
         }
-        else if(arg1->type() == typeid(std::string)){
+        else if (arg1->type() == typeid(std::string)) {
             std::string tot = std::any_cast<std::string>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot+=std::any_cast<std::string>(*args[i].getValue(runResource).get());
-                //You can move this one!
+            for (size_t i = 1; i < args.size(); i++)
+                tot += std::any_cast<std::string>(*args[i].getValue(runResource).get());
+            //You can move this one!
             return moveVal<std::string>(std::move(tot));
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(sub){
+    };
+    qdef(sub) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int tot = std::any_cast<int>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot-=std::any_cast<int>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot -= std::any_cast<int>(*args[i].getValue(runResource).get());
             return makeVal<int>(tot);
         }
-        else if(arg1->type() == typeid(float)){
+        else if (arg1->type() == typeid(float)) {
             float tot = std::any_cast<float>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot-=std::any_cast<float>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot -= std::any_cast<float>(*args[i].getValue(runResource).get());
             return makeVal<float>(tot);
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(div){
+    };
+    qdef(div) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int tot = std::any_cast<int>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot/=std::any_cast<int>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot /= std::any_cast<int>(*args[i].getValue(runResource).get());
             return makeVal<int>(tot);
         }
-        else if(arg1->type() == typeid(float)){
+        else if (arg1->type() == typeid(float)) {
             float tot = std::any_cast<float>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot/=std::any_cast<float>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot /= std::any_cast<float>(*args[i].getValue(runResource).get());
             return makeVal<float>(tot);
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(mul){
+    };
+    qdef(mul) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int tot = std::any_cast<int>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot*=std::any_cast<int>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot *= std::any_cast<int>(*args[i].getValue(runResource).get());
             return makeVal<int>(tot);
         }
-        else if(arg1->type() == typeid(float)){
+        else if (arg1->type() == typeid(float)) {
             float tot = std::any_cast<float>(*arg1.get());
-            for(size_t i = 1; i < args.size(); i++)
-                tot*=std::any_cast<float>(*args[i].getValue(runResource).get());
+            for (size_t i = 1; i < args.size(); i++)
+                tot *= std::any_cast<float>(*args[i].getValue(runResource).get());
             return makeVal<float>(tot);
         }
         printf("%s\n", arg1->type().name());
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(mod){
+    };
+    qdef(mod) {
         int modResult = std::any_cast<int>(*args[0].getValue(runResource).get()) % std::any_cast<int>(*args[1].getValue(runResource).get());
         return makeVal<int>(modResult);
-    }
-    qdef(square_root){
+    };
+    qdef(square_root) {
         value arg = args[0].getValue(runResource);
-        if(arg->type() == typeid(int)){
+        if (arg->type() == typeid(int)) {
             return makeVal<int>(std::sqrt(std::any_cast<int>(*arg.get())));
         }
-        else if(arg->type() == typeid(float)){
+        else if (arg->type() == typeid(float)) {
             return makeVal<float>(std::sqrt(std::any_cast<float>(*arg.get())));
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
+    };
 
 
     //Logical quearies
-    qdef(lshift){
+    qdef(lshift) {
         int argl = std::any_cast<int>(*args[0].getValue(runResource));
         int argr = std::any_cast<int>(*args[1].getValue(runResource));
         return makeVal<int>(argl << argr);
-    }
-    qdef(rshift){
+    };
+    qdef(rshift) {
         int argl = std::any_cast<int>(*args[0].getValue(runResource));
         int argr = std::any_cast<int>(*args[1].getValue(runResource));
         return makeVal<int>(argl >> argr);
-    }
-    qdef(land){
+    };
+    qdef(land) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int argl = std::any_cast<int>(*arg1);
             int argr = std::any_cast<int>(*args[1].getValue(runResource));
             return makeVal<int>(argl & argr);
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(lor){
+    };
+    qdef(lor) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int argl = std::any_cast<int>(*arg1);
             int argr = std::any_cast<int>(*args[1].getValue(runResource));
             return makeVal<int>(argl | argr);
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(lnot){
+    };
+    qdef(lnot) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int argl = std::any_cast<int>(*arg1);
             return makeVal<int>(~argl);
         }
-        else if(arg1->type() == typeid(float)){
-            return makeVal<bool>(std::any_cast<float>(*args[0].getValue(runResource))  == 0.0);
+        else if (arg1->type() == typeid(float)) {
+            return makeVal<bool>(std::any_cast<float>(*args[0].getValue(runResource)) == 0.0);
         }
-        else if(arg1->type() == typeid(bool)){
+        else if (arg1->type() == typeid(bool)) {
             return makeVal<bool>(!std::any_cast<float>(*args[0].getValue(runResource)));
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(lxor){
+    };
+    qdef(lxor) {
         value arg1 = args[0].getValue(runResource);
-        if(arg1->type() == typeid(int)){
+        if (arg1->type() == typeid(int)) {
             int argl = std::any_cast<int>(*arg1);
             int argr = std::any_cast<int>(*args[1].getValue(runResource));
             return makeVal<int>(argl ^ argr);
         }
-        else if(arg1->type() == typeid(bool)){
+        else if (arg1->type() == typeid(bool)) {
             bool argl = std::any_cast<bool>(*arg1);
             bool argr = std::any_cast<bool>(*args[1].getValue(runResource));
             return makeVal<bool>(argl ^ argr);
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
+    };
 
 
     //Binary quearies
-    qdef(band){
-        for(size_t i = 0; i < args.size(); i++)
-            if(! is_true(args[i], runResource))
+    qdef(band) {
+        for (size_t i = 0; i < args.size(); i++)
+            if (!is_true(args[i], runResource))
                 return makeVal<bool>(false);
         return makeVal<bool>(true);
-    }
-    qdef(bor){
-        for(size_t i = 0; i < args.size(); i++)
-            if(is_true(args[i], runResource))
+    };
+    qdef(bor) {
+        for (size_t i = 0; i < args.size(); i++)
+            if (is_true(args[i], runResource))
                 return makeVal<bool>(true);
         return makeVal<bool>(false);
-    }
+    };
 
-    bool areArgsEqual(argument& arg1, argument& arg2, unique_run_resource& runResource){
+    bool areArgsEqual(argument& arg1, argument& arg2, unique_run_resource& runResource) {
         value v1 = arg1.getValue(runResource);
         value v2 = arg2.getValue(runResource);
-        if(v1->type() == typeid(int)){
+        if (v1->type() == typeid(int)) {
             return std::any_cast<int>(*v1) == std::any_cast<int>(*v2);
         }
-        else if(v1->type() == typeid(float)){
+        else if (v1->type() == typeid(float)) {
             return std::any_cast<float>(*v1) == std::any_cast<float>(*v2);
         }
-        else if(v1->type() == typeid(bool)){
+        else if (v1->type() == typeid(bool)) {
             return std::any_cast<bool>(*v1) == std::any_cast<bool>(*v2);
         }
-        else if(v1->type() == typeid(std::string)){
+        else if (v1->type() == typeid(std::string)) {
             return std::any_cast<std::string>(*v1) == std::any_cast<std::string>(*v2);
         }
-        else if(v1->type() == typeid(std::type_index)){
+        else if (v1->type() == typeid(std::type_index)) {
             return std::any_cast<std::type_index>(*v1) == std::any_cast<std::type_index>(*v2);
         }
         throw(new INVALID_ARGUMENT_TYPE);
-    }
-    qdef(beq){
+    };
+    qdef(beq) {
         return makeVal<bool>(areArgsEqual(args[0], args[1], runResource));
-    }
-    qdef(bneq){
+    };
+    qdef(bneq) {
         return makeVal<bool>(!areArgsEqual(args[0], args[1], runResource));
-    }
-    
-    //TO DO
+    };
+
+
     bool leftLessRight(argument& arg1, argument& arg2, unique_run_resource& runResource){
         value v1 = arg1.getValue(runResource);
         value v2 = arg2.getValue(runResource);
@@ -251,120 +251,120 @@ namespace q{
         }
         throw(new INVALID_ARGUMENT_TYPE);}
 
-    qdef(bless){
+    qdef(bless) {
         return makeVal<bool>(leftLessRight(args[0], args[1], runResource));
-    }
-    qdef(bgreater){
+    };
+    qdef(bgreater) {
         return makeVal<bool>(leftMoreRight(args[0], args[1], runResource));
-    }
-    qdef(blesseq){
+    };
+    qdef(blesseq) {
         return makeVal<bool>(!leftMoreRight(args[0], args[1], runResource));
-    }
-    qdef(bgreatereq){
+    };
+    qdef(bgreatereq) {
         return makeVal<bool>(!leftLessRight(args[0], args[1], runResource));
-    }
+    };
 
 
     //list quearies
-    std::shared_ptr<std::vector<std::any>> getAnyVecPtr(argument& arg, unique_run_resource& runResource){
+    std::shared_ptr<std::vector<std::any>> getAnyVecPtr(argument& arg, unique_run_resource& runResource) {
         return std::any_cast<std::shared_ptr<std::vector<std::any>>>(*arg.getValue(runResource));
-    }
+    };
 
-    qdef(list_create){
+    qdef(list_create) {
         return std::make_shared<std::any>(std::make_any<std::vector<std::any>>());
-    }
-    qdef(list_size){
+    };
+    qdef(list_size) {
         return makeVal<int>(getAnyVecPtr(args[0], runResource)->size());
-    }
-    qdef(list_index){
+    };
+    qdef(list_index) {
         int index = std::any_cast<int>(*args[1].getValue(runResource));
         return std::make_shared<std::any>((*getAnyVecPtr(args[0], runResource))[index]);
-    }
-    qdef(list_pop){
+    };
+    qdef(list_pop) {
         std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
         value toret = std::make_shared<std::any>(vec->back());
         vec->pop_back();
         return toret;
-    }
-    qdef(list_pop_front){
+    };
+    qdef(list_pop_front) {
         std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
         value toret = std::make_shared<std::any>(vec->front());
         vec->erase(vec->begin());
         return toret;
-    }
-    qdef(list_front){
+    };
+    qdef(list_front) {
         std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
         value toret = std::make_shared<std::any>(vec->front());
         return toret;
-    }
-    qdef(list_tail){
+    };
+    qdef(list_tail) {
         std::shared_ptr<std::vector<std::any>> vec = getAnyVecPtr(args[0], runResource);
         value toret = std::make_shared<std::any>(vec->back());
         return toret;
-    }
+    };
 
 
     //IO quearies
-    qdef(input){
+    qdef(input) {
         std::string userInput = "";
         std::getline(std::cin, userInput);
         return moveVal<std::string>(std::move(userInput));
-    }
+    };
 
 
     //Type quearies and conversions
-    qdef(getType){
+    qdef(getType) {
         return makeVal<std::type_index>(args[0].getValue(runResource)->type());
-    }
+    };
 
 #define ConvFunc(type, wantedType, functionStart, functionEnd) return makeVal< wantedType > ( functionStart( std::any_cast<type>(*args[0].getValue(runResource)) functionEnd ))
 
-    qdef(ftoi){
-        ConvFunc(float, int, int , );
-    }
-    qdef(stoi){
+    qdef(ftoi) {
+        ConvFunc(float, int, int, );
+    };
+    qdef(stoi) {
         ConvFunc(std::string, int, std::atoi, .c_str());
-    }
-    qdef(btoi){
+    };
+    qdef(btoi) {
         ConvFunc(bool, int, int, );
-    }
+    };
 
-    qdef(itof){
+    qdef(itof) {
         ConvFunc(int, float, float, );
-    }
+    };
     qdef(btof){
         ConvFunc(bool, float, float, );
-    }
-    qdef(stof){
+    };
+    qdef(stof) {
         ConvFunc(std::string, float, std::atof, .c_str());
-    }
+    };
 
-    bool stob(const std::string& s){
+    bool sstob(const std::string& s){
         return s == "true";
     }
 
-    qdef(itob){
+    qdef(itob) {
         ConvFunc(int, bool, bool, );
-    }
-    qdef(ftob){
+    };
+    qdef(ftob) {
         ConvFunc(float, bool, bool, );
-    }
-    qdef(stob){
-        ConvFunc(std::string, bool, stob, );
-    }
+    };
+    qdef(stob) {
+        ConvFunc(std::string, bool, sstob, );
+    };
 
-    qdef(itos){
+    qdef(itos) {
         ConvFunc(int, std::string, std::to_string, );
-    }
-    qdef(ftos){
+    };
+    qdef(ftos) {
         ConvFunc(float, std::string, std::to_string, );
-    }
-    qdef(btos){
+    };
+    qdef(btos) {
         ConvFunc(bool, std::string, std::to_string, );
-    }
-    qdef(ttos){
+    };
+    qdef(ttos) {
         return makeVal<std::string>(std::any_cast<std::type_index>(*args[0].getValue(runResource)).name());
-    }
+    };
 }
 #undef qdef
 
