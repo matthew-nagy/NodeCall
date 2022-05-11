@@ -416,7 +416,9 @@ namespace nc {
 		}
 
 		ParserPack parseTokens(std::vector<token>& tokens, const std::shared_ptr<compilation_environment>& compEnv) {
+#ifdef NC_COMPILE_PRINTING
 			printf("IN PARSE TOKENS\n");
+#endif
 			ParserPack pack(tokens, compEnv);
 			while (pack.tokens.peek().type != null_token) {
 				if (pack.tokens.peek().type != variable)

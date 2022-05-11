@@ -53,6 +53,11 @@ namespace nc{
     //Mapping for variables
     typedef std::unordered_map<std::string, value> VariableTable;
 
+    //Type of runtime
+    enum runtype {
+        rt_Serial, rt_Parallel
+    };
+
     //Different ways a node can be called
     enum call_type{
         call_cond_breakable,    //A conditional which 'break' can exit (while loop, do while, etc)
@@ -166,11 +171,12 @@ namespace nc{
 
         void loadProgram(const std::shared_ptr<program>& newProgram);
 
-        Runtime();
+        Runtime(runtype runType);
 
         ~Runtime();
 
     private:
+        runtype runType;
 
         void (*printFunction)(const std::string&);
 
@@ -192,6 +198,8 @@ namespace nc{
         std::unique_ptr<runtime_resources> runtimeResource; //Method of exposing functionality to threads without giving them master control
 
         std::atomic_uint16_t runsExecuted = 0;                          //Counts how many times this runtime has been used to execute something
+
+        void runLoadedFunction();
 
         void runProgram();
     };

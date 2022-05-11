@@ -41,7 +41,9 @@ namespace nc {
         }
 
         void compilation_environment::requestNewVariable(const std::string& varName) {
+#ifdef NC_COMPILE_PRINTING
             printf("Creating new variable %s\n", varName.c_str());
+#endif
             newVariables[varName] = std::make_shared<std::any>();
         }
 
@@ -70,17 +72,23 @@ namespace nc {
             for (auto& l : libraries)
                 if (l->quearies.count(s) > 0)
                     return l->quearies.find(s)->second;
+#ifdef NC_COMPILE_PRINTING
             printf("%s\n", s.c_str());
+#endif
             throw(new UNKNOWN_QUEARY_REQUESTED);
         }
         value compilation_environment::getVariable(const std::string& s) {
+#ifdef NC_COMPILE_PRINTING
             printf("variable name is >'%s'<\n", s.c_str());
+#endif
             for (auto& l : libraries)
                 if (l->variables.count(s) > 0)
                     return l->variables.find(s)->second;
             if (newVariables.count(s) > 0)
                 return newVariables.find(s)->second;
+#ifdef NC_COMPILE_PRINTING
             printf("%s\n", s.c_str());
+#endif
             throw(new UNKNOWN_VARIABLE_REQUESTED);
         }
 
@@ -245,11 +253,15 @@ namespace nc {
         source::source(const std::string& name) {
             std::ifstream file;
             file.open(name, std::ios::in);
+#ifdef NC_COMPILE_PRINTING
             printf("Source is at >'%s'\n", name.c_str());
+#endif
             createFromLines(lineFromFile(file));
 
+#ifdef NC_COMPILE_PRINTING
             for (auto& s : lines)
                 printf("\t%s\n", s.c_str());
+#endif
         }
 
         source::source(std::ifstream& file) {

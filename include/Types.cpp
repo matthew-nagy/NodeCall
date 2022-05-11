@@ -109,7 +109,11 @@ void Runtime::enterProgramAt(const std::string& nodeName){
     currentFrame.index = currentProgram->nodeMappings[nodeName];
 
     running = true;
-    launchShutdownVariable.notify_one();
+
+    if (runType == rt_Parallel)
+        launchShutdownVariable.notify_one();
+    else
+        runLoadedFunction();
 }
 
 void Runtime::loadProgram(const std::shared_ptr<program>& newProgram){
@@ -118,35 +122,47 @@ void Runtime::loadProgram(const std::shared_ptr<program>& newProgram){
     currentProgram = newProgram;
 }
 
-Runtime::Runtime():
+Runtime::Runtime(runtype runType):
     running(false),
     shutdownFlag(false),
     printFunction(Runtime::defaultPrint),
     runtimeResource(new runtime_resources(*this))
 {
-    std::unique_lock<std::mutex> launchLock(internalMutex);
-    std::atomic_bool busyWaitLaunch = true;
-    //Send of the script thread
-    std::thread([this](std::atomic_bool& setupRequired){
-        //This lock will persist until the thread shuts down
-        std::unique_lock<std::mutex> shutdownLock(shutdownMutex);
-        setupRequired = false;
-        this->runProgram();
-    }, std::ref(busyWaitLaunch)).detach();
+    if (runType == rt_Parallel) {
+        std::unique_lock<std::mutex> launchLock(internalMutex);
+        std::atomic_bool busyWaitLaunch = true;
+        //Send of the script thread
+        std::thread([this](std::atomic_bool& setupRequired) {
+            //This lock will persist until the thread shuts down
+            std::unique_lock<std::mutex> shutdownLock(shutdownMutex);
+            setupRequired = false;
+            this->runProgram();
+        }, std::ref(busyWaitLaunch)).detach();
 
-    while(busyWaitLaunch){}
+        while (busyWaitLaunch) {}
+    }
 }
 
 Runtime::~Runtime(){
-    shutdownFlag = true;    //Tell script to shutdown
-    pause();                //Make sure its no longer running so it can register that flag
-    launchShutdownVariable.notify_one();    //Launch it again in case it got stuck somewhere ig
-    std::unique_lock<std::mutex> sync(shutdownMutex);   //now take the mutex that the script holds throughout its lifetime. This proves it has finished
+    if (runType == rt_Parallel) {
+        shutdownFlag = true;    //Tell script to shutdown
+        pause();                //Make sure its no longer running so it can register that flag
+        launchShutdownVariable.notify_one();    //Launch it again in case it got stuck somewhere ig
+        std::unique_lock<std::mutex> sync(shutdownMutex);   //now take the mutex that the script holds throughout its lifetime. This proves it has finished
+    }
 }
 
 
 void Runtime::defaultPrint(const std::string& s) {
     printf("%s", s.c_str());
+}
+
+void Runtime::runLoadedFunction() {
+    while (running) {
+        Operation& op = currentProgram->nodes[currentFrame.index][currentFrame.nextInstruction];
+        currentFrame.nextInstruction++;
+        op(runtimeResource);
+    }
 }
 
 void Runtime::runProgram(){
@@ -155,11 +171,7 @@ void Runtime::runProgram(){
     std::unique_lock<std::mutex> myLock(internalMutex);
     while(!shutdownFlag){
         launchShutdownVariable.wait(myLock);
-        while(running){
-            Operation& op = currentProgram->nodes[currentFrame.index][currentFrame.nextInstruction];
-            currentFrame.nextInstruction++;
-            op(runtimeResource);
-        }
+        runLoadedFunction();
         runsExecuted += 1;
     }
 }
