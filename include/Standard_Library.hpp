@@ -38,6 +38,15 @@ struct sleep_pack{
     float toWait;  
 };
 
+template<class T>
+value moveVal(T&& input) {
+    return std::make_shared<std::any>(std::make_any<T>(input));
+}
+template<class T>
+value makeVal(T input) {
+    return std::make_shared<std::any>(std::make_any<T>(input));
+}
+
 #define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
 namespace q{
     //Mathmatic quearies
@@ -98,7 +107,6 @@ namespace q{
     qdef(btos);
     qdef(ttos);
 }
-#undef qdef
 
 #define opdef(name) void name (argument_list& args, unique_run_resource& runResource)
 namespace op{
@@ -135,7 +143,6 @@ namespace op{
     opdef(list_push);
     opdef(list_push_back);
 }
-#undef qdef
 
 }
 }

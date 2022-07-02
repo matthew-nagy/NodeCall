@@ -3,7 +3,6 @@
 
 namespace nc{   namespace stlib{
 
-#define opdef(name) void name (argument_list& args, unique_run_resource& runResource)
 namespace op{
     //IO
     opdef(print){
@@ -33,7 +32,7 @@ namespace op{
         auto& a = args[0];
         auto val = a.getValue(runResource);
 
-        if_pack& ifs = * (std::any_cast<std::shared_ptr<if_pack>>(*val));
+        if_pack& ifs = *std::any_cast<std::shared_ptr<if_pack>>(val.get())->get();
         for(size_t i = 0; i < ifs.triggers.size(); i++){
             auto& triggerArg = ifs.triggers[i];
             auto triggerValue = triggerArg.getValue(runResource);
@@ -53,13 +52,13 @@ namespace op{
     opdef(conditional_else){}
     //The bottom of the resulting node should have a special if pack at the bottom to send it back to the same node
     opdef(while_loop){
-        while_pack& wp = *std::any_cast<std::shared_ptr<while_pack>>(*args[0].getValue(runResource)).get();
+        while_pack& wp = *std::any_cast<std::shared_ptr<while_pack>>(args[0].getValue(runResource).get())->get();
         if(std::any_cast<bool>(*wp.trigger.getValue(runResource))){
             runResource->call(call_cond_breakable, wp.node);
         }
     }
     opdef(while_node_bottom) {
-        while_pack& wp = *std::any_cast<std::shared_ptr<while_pack>>(*args[0].getValue(runResource)).get();
+        while_pack& wp = *std::any_cast<std::shared_ptr<while_pack>>(args[0].getValue(runResource).get())->get();
         if (std::any_cast<bool>(*wp.trigger.getValue(runResource))) {
             runResource->sendToNode(wp.node);
         }
@@ -94,7 +93,7 @@ namespace op{
         std::any anyPack = sleepPack;
 
         runResource->blockOnCondition([](const std::any& anyPack){
-            sleep_pack& sp = *std::any_cast<std::shared_ptr<sleep_pack>>(anyPack).get();
+            sleep_pack& sp = *std::any_cast<std::shared_ptr<sleep_pack>>(&anyPack)->get();
             //Arbitrary precision
             std::this_thread::sleep_for(std::chrono::milliseconds(int(sp.toWait * 1000.0)));
             sp.cond->notify_one();
@@ -106,21 +105,20 @@ namespace op{
 
     //List operations
     opdef(list_clear){
-        std::vector<std::any>& v = *std::any_cast<std::shared_ptr<std::vector<std::any>>>(*args[0].getValue(runResource)).get();
+        std::vector<std::any>& v = *std::any_cast<std::shared_ptr<std::vector<std::any>>*>(args[0].getValue(runResource))->get();
         v.clear();
     }
     opdef(list_push){
-        std::vector<std::any>& v = *std::any_cast<std::shared_ptr<std::vector<std::any>>>(*args[0].getValue(runResource)).get();
+        std::vector<std::any>& v = *std::any_cast<std::shared_ptr<std::vector<std::any>>*>(args[0].getValue(runResource))->get();
         for(size_t i = 1; i < args.size(); i++)
             v.emplace(v.begin(), *args[i].getValue(runResource));
     }
     opdef(list_push_back){
-        std::vector<std::any>& v = *std::any_cast<std::shared_ptr<std::vector<std::any>>>(*args[0].getValue(runResource)).get();
+        std::vector<std::any>& v = *std::any_cast<std::shared_ptr<std::vector<std::any>>*>(args[0].getValue(runResource))->get();
         for(size_t i = 1; i < args.size(); i++)
             v.emplace_back(*args[i].getValue(runResource));
     }
 }
-#undef qdef
 
 const OperationTable _standard_operations = {
     {"print", op::print}, {"println", op::println},

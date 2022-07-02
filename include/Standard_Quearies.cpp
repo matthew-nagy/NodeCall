@@ -26,16 +26,6 @@ bool is_true(argument& val, unique_run_resource& runResource){
     throw(new INVALID_ARGUMENT_TYPE);
 }
 
-template<class T>
-value moveVal(T&& input){
-    return std::make_shared<std::any>(std::make_any<T>(input));
-}
-template<class T>
-value makeVal(T input){
-    return std::make_shared<std::any>(std::make_any<T>(input));
-}
-
-#define qdef(name) value name (argument_list& args, unique_run_resource& runResource)
 namespace q{
     //Mathmatic quearies
     qdef(add){
@@ -360,13 +350,12 @@ namespace q{
         ConvFunc(float, std::string, std::to_string, );
     }
     qdef(btos){
-        ConvFunc(bool, std::string, std::to_string, );
+        ConvFunc(bool, std::string, ([](bool myBool) {return myBool ? "true" : "false"; }), );
     }
     qdef(ttos){
         return makeVal<std::string>(std::any_cast<std::type_index>(*args[0].getValue(runResource)).name());
     }
 }
-#undef qdef
 
 
     //The names of all the quaries, and their function pointers

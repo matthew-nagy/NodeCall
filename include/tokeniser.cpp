@@ -339,7 +339,6 @@ namespace nc {
 
             c = sourceCode.get();
             do {
-                printf("%s\n", (std::string("") + c).c_str());
                 if (c == '\\') {
                     char replacement = 'n';
                     switch (sourceCode.peek()) {

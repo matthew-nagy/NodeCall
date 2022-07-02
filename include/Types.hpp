@@ -132,7 +132,7 @@ namespace nc{
     public:
         template<class T>
         T& get(){
-            return map[typeid(T)];
+            return *std::any_cast<T>(&map[typeid(T)]);
         }
 
         template<class T>
